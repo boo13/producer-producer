@@ -17,7 +17,7 @@ None
 - [x] **Phase 1: Foundation** - CSS variables, reset, desktop background
 - [x] **Phase 2: Window System** - Reusable window component styling
 - [x] **Phase 3: Hero & Form** - Main subscription window with form
-- [ ] **Phase 4: Decorative Elements** - Supporting windows, folders, media player
+- [ ] **Phase 4: Decorative Elements** - Supporting windows, folders, media player (In progress)
 - [ ] **Phase 5: Responsive & Polish** - Mobile layout, accessibility, final touches
 
 ## Phase Details
@@ -56,7 +56,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Search window, system error dialog, lost message bubble
+- [x] 04-01: Search window, system error dialog, lost message bubble
 - [ ] 04-02: Folder icons, media player, loading bar
 
 ### Phase 5: Responsive & Polish
@@ -78,5 +78,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Foundation | 1/1 | Complete | 2026-01-16 |
 | 2. Window System | 1/1 | Complete | 2026-01-16 |
 | 3. Hero & Form | 1/1 | Complete | 2026-01-16 |
-| 4. Decorative Elements | 0/2 | Not started | - |
+| 4. Decorative Elements | 1/2 | In progress | - |
 | 5. Responsive & Polish | 0/1 | Not started | - |
