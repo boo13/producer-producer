@@ -1,9 +1,0 @@
-<IfModule mod_headers.c>
-    <FilesMatch "\.(css|js)$">
-        Header set Cache-Control "public, max-age=0, must-revalidate"
-    </FilesMatch>
-
-    <FilesMatch "^index\.html$">
-        Header set Cache-Control "no-cache, must-revalidate"
-    </FilesMatch>
-</IfModule>
