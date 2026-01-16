@@ -50,6 +50,40 @@ body {
     overflow: hidden;
 }
 
+.window-title-bar {
+    background: var(--title-bar);
+    padding: var(--spacing-sm) var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    border-bottom: var(--border-width) solid var(--window-border);
+}
+
+.window-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 1;
+}
+
+.window-controls {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.window-control {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid var(--window-border);
+    background: var(--window-bg);
+}
+
+.window-control.close {
+    background: var(--accent);
+    border-color: #c0392b;
+}
+
 .submit {
   background: linear-gradient(45deg, #fb4764, #f88d5f) no-repeat;
   border: none;
