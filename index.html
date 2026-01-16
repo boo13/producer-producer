@@ -1,146 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subscribe - Producer Producer</title>
+    <title>Producer-Producer</title>
     <!-- Append a version query to bust CDN cache when styles change -->
     <link rel="stylesheet" href="css/styles.css?v=20260116">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
+
 <body>
     <main class="desktop">
-    <!-- Folder Icons (decorative) -->
-    <div class="folder-column" role="presentation">
-        <div class="folder-icon">
-            <div class="folder-shape"></div>
-            <span class="folder-label">Documents</span>
+        <!-- Folder Icons (decorative) -->
+        <div class="folder-column" role="presentation">
+            <div class="folder-icon">
+                <div class="folder-shape"></div>
+                <span class="folder-label">Documents</span>
+            </div>
+            <div class="folder-icon">
+                <div class="folder-shape"></div>
+                <span class="folder-label">Photos</span>
+            </div>
+            <div class="folder-icon">
+                <div class="folder-shape"></div>
+                <span class="folder-label">Memories</span>
+            </div>
         </div>
-        <div class="folder-icon">
-            <div class="folder-shape"></div>
-            <span class="folder-label">Photos</span>
-        </div>
-        <div class="folder-icon">
-            <div class="folder-shape"></div>
-            <span class="folder-label">Memories</span>
-        </div>
-    </div>
 
-    <!-- Search Window (decorative) -->
-    <div class="window search-window" role="presentation" aria-label="Decorative search window">
-        <div class="window-title-bar">
-            <div class="window-controls">
-                <span class="window-control close"></span>
-                <span class="window-control minimize"></span>
-                <span class="window-control maximize"></span>
-            </div>
-            <span class="window-title">Search...</span>
-        </div>
-        <div class="window-body">
-            <div class="search-input-wrapper">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
-                </svg>
-                <input type="text" placeholder="Search files..." disabled aria-hidden="true">
-            </div>
-        </div>
-    </div>
-
-    <div class="window hero-window">
-        <div class="window-title-bar">
-            <div class="window-controls">
-                <span class="window-control close"></span>
-                <span class="window-control minimize"></span>
-                <span class="window-control maximize"></span>
-            </div>
-            <span class="window-title">producer-producer</span>
-        </div>
-        <div class="window-body">
-            <h1 class="title">producer-producer</h1>
-            <p class="description">subscribe to the newsletter for job updates... sent daily, at most. Or less. Probably less, since it only sends if a job makes the cut. 🤷</p>
-            <form
-                action="https://buttondown.com/api/emails/embed-subscribe/Producer-Producer"
-                method="post"
-                class="embeddable-buttondown-form form-box"
-                id="subscribe-form">
-                <div class="input-main">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16">
-                        <path
-                            d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z" />
-                    </svg>
-                    <input type="email" name="email" id="bd-email" placeholder="Your Email" required>
+        <!-- Search Window (decorative) -->
+        <div class="window search-window" role="presentation" aria-label="Decorative search window">
+            <div class="window-title-bar">
+                <div class="window-controls">
+                    <span class="window-control close"></span>
+                    <span class="window-control minimize"></span>
+                    <span class="window-control maximize"></span>
                 </div>
-                <input type="text" name="phone" id="phone" class="phone-field" tabindex="-1" autocomplete="off" aria-hidden="true">
-                <button class="submit" type="submit">Submit</button>
-            </form>
+                <span class="window-title">Search...</span>
+            </div>
+            <div class="window-body">
+                <div class="search-input-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                        viewBox="0 0 16 16" aria-hidden="true">
+                        <path
+                            d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                    </svg>
+                    <input type="text" placeholder="Search files..." disabled aria-hidden="true">
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- System Error Dialog (decorative) -->
-    <div class="window error-dialog" role="dialog" aria-label="Decorative system error dialog">
-        <div class="window-title-bar">
-            <div class="window-controls">
-                <span class="window-control close"></span>
-                <span class="window-control minimize"></span>
-                <span class="window-control maximize"></span>
+        <div class="window hero-window">
+            <div class="window-title-bar">
+                <div class="window-controls">
+                    <span class="window-control close"></span>
+                    <span class="window-control minimize"></span>
+                    <span class="window-control maximize"></span>
+                </div>
+                <span class="window-title">Newsletter</span>
             </div>
-            <span class="window-title">System error</span>
-        </div>
-        <div class="window-body">
-            <p class="error-message">An unexpected error has occurred. Your career choices may be affected.</p>
-            <div class="dialog-buttons">
-                <button type="button" class="dialog-btn" disabled>oh no</button>
-                <button type="button" class="dialog-btn" disabled>ok</button>
+            <div class="window-body">
+                <h1 class="title">producer-producer</h1>
+                <p class="description">subscribe to the newsletter for job updates... <br>It'll be sent daily, at most.
+                    Or less.
+                    Probably less, since it only sends if a job makes the cut. 🤷</p>
+                <form action="https://buttondown.com/api/emails/embed-subscribe/Producer-Producer" method="post"
+                    class="embeddable-buttondown-form form-box" id="subscribe-form">
+                    <div class="input-main">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-envelope" viewBox="0 0 16 16">
+                            <path
+                                d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z" />
+                        </svg>
+                        <input type="email" name="email" id="bd-email" placeholder="Your Email" required>
+                    </div>
+                    <input type="text" name="phone" id="phone" class="phone-field" tabindex="-1" autocomplete="off"
+                        aria-hidden="true">
+                    <button class="submit" type="submit">Submit</button>
+                </form>
             </div>
         </div>
-    </div>
 
-    <!-- Speech Bubble (decorative) -->
-    <div class="speech-bubble" role="presentation">
-        <span class="speech-bubble-text">LOST MESSAGE</span>
-    </div>
+        <!-- System Error Dialog (decorative) -->
+        <div class="window error-dialog" role="dialog" aria-label="Decorative system error dialog">
+            <div class="window-title-bar">
+                <div class="window-controls">
+                    <span class="window-control close"></span>
+                    <span class="window-control minimize"></span>
+                    <span class="window-control maximize"></span>
+                </div>
+                <span class="window-title">System error</span>
+            </div>
+            <div class="window-body">
+                <p class="error-message">An unexpected error has occurred. Your career choices may be affected.</p>
+                <div class="dialog-buttons">
+                    <button type="button" class="dialog-btn" disabled>oh no</button>
+                    <button type="button" class="dialog-btn" disabled>ok</button>
+                </div>
+            </div>
+        </div>
 
-    <!-- Media Player (decorative) -->
-    <div class="window media-player" role="presentation" aria-label="Decorative media player">
-        <div class="window-title-bar">
-            <div class="window-controls">
-                <span class="window-control close"></span>
-                <span class="window-control minimize"></span>
-                <span class="window-control maximize"></span>
-            </div>
-            <span class="window-title">now playing</span>
+        <!-- Speech Bubble (decorative) -->
+        <div class="speech-bubble" role="presentation">
+            <span class="speech-bubble-text">LOST MESSAGE</span>
         </div>
-        <div class="window-body">
-            <div class="player-time">5:08</div>
-            <div class="player-waveform">
-                <span class="wave-bar"></span>
-                <span class="wave-bar"></span>
-                <span class="wave-bar"></span>
-                <span class="wave-bar"></span>
-                <span class="wave-bar"></span>
-                <span class="wave-bar"></span>
-                <span class="wave-bar"></span>
-                <span class="wave-bar"></span>
-                <span class="wave-bar"></span>
-                <span class="wave-bar"></span>
-            </div>
-            <div class="player-controls">
-                <button type="button" class="player-btn" disabled aria-hidden="true">◀◀</button>
-                <button type="button" class="player-btn play" disabled aria-hidden="true">▶</button>
-                <button type="button" class="player-btn" disabled aria-hidden="true">▶▶</button>
-            </div>
-        </div>
-    </div>
 
-    <!-- Loading Bar (decorative) -->
-    <div class="loading-bar" role="presentation">
-        <span class="loading-label">Loading...</span>
-        <div class="loading-track">
-            <div class="loading-fill"></div>
+        <!-- Media Player (decorative) -->
+        <div class="window media-player" role="presentation" aria-label="Decorative media player">
+            <div class="window-title-bar">
+                <div class="window-controls">
+                    <span class="window-control close"></span>
+                    <span class="window-control minimize"></span>
+                    <span class="window-control maximize"></span>
+                </div>
+                <span class="window-title">now playing</span>
+            </div>
+            <div class="window-body">
+                <div class="player-time">5:08</div>
+                <div class="player-waveform">
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                </div>
+                <div class="player-controls">
+                    <button type="button" class="player-btn" disabled aria-hidden="true">◀◀</button>
+                    <button type="button" class="player-btn play" disabled aria-hidden="true">▶</button>
+                    <button type="button" class="player-btn" disabled aria-hidden="true">▶▶</button>
+                </div>
+            </div>
         </div>
-    </div>
+
+        <!-- Loading Bar (decorative) -->
+        <div class="loading-bar" role="presentation">
+            <span class="loading-label">Loading...</span>
+            <div class="loading-track">
+                <div class="loading-fill"></div>
+            </div>
+        </div>
     </main>
     <!-- Keep JS cache-busting in sync with CSS -->
     <script src="js/subscribe-form.js?v=20260116"></script>
 </body>
+
 </html>
