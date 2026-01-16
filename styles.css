@@ -125,3 +125,10 @@ body {
   }
 }
 
+.phone-field {
+  position: absolute;
+  left: -5000px;
+  opacity: 0;
+  pointer-events: none;
+}
+

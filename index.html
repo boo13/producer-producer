@@ -8,19 +8,84 @@
 </head>
 <body>
     <div class="container">
-        <img class="img-head" src="https://raw.githubusercontent.com/emnatkins/cdn-codepen/main/LYJWgdK/LYJWgdK.mail.jpg" alt="subscribe to email">
+        <img class="img-head" src="images/newsletter.jpg" alt="subscribe to email">
         <h1 class="title">subscribe</h1>
         <p class="description">subscribe to our newsletter & stay updated</p>
-        <div class="form-box">
+        <form
+            action="https://buttondown.com/api/emails/embed-subscribe/Producer-Producer"
+            method="post"
+            class="embeddable-buttondown-form form-box"
+            id="subscribe-form">
             <div class="input-main">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16">
                     <path
                         d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z" />
                 </svg>
-                <input type="email" name="email" placeholder="Your Email">
+                <input type="email" name="email" id="bd-email" placeholder="Your Email" required>
             </div>
+            <input type="text" name="phone" id="phone" class="phone-field" tabindex="-1" autocomplete="off" aria-hidden="true">
             <button class="submit" type="submit">Submit</button>
-        </div>
+        </form>
     </div>
+    <script>
+        // Track form load time for bot detection
+        const formLoadTime = Date.now();
+
+        // Rate limiting configuration (20 seconds)
+        const RATE_LIMIT_SECONDS = 20;
+        const RATE_LIMIT_KEY = 'pp_last_submit';
+
+        // Email validation regex (more strict than HTML5)
+        const EMAIL_REGEX = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        document.getElementById('subscribe-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const form = this;
+            const submitBtn = form.querySelector('.submit');
+            const emailInput = document.getElementById('bd-email');
+            const phoneField = document.getElementById('phone');
+
+            // 1. Honeypot check
+            if (phoneField.value !== '') {
+                return false;
+            }
+
+            // 2. Timing-based bot detection (reject if submitted in < 2 seconds)
+            const timeOnPage = (Date.now() - formLoadTime) / 1000;
+            if (timeOnPage < 2) {
+                return false;
+            }
+
+            // 3. Rate limiting check
+            const lastSubmit = localStorage.getItem(RATE_LIMIT_KEY);
+            if (lastSubmit) {
+                const timeSinceLastSubmit = (Date.now() - parseInt(lastSubmit)) / 1000;
+                if (timeSinceLastSubmit < RATE_LIMIT_SECONDS) {
+                    const remainingSeconds = Math.ceil(RATE_LIMIT_SECONDS - timeSinceLastSubmit);
+                    alert(`Please wait ${remainingSeconds} seconds before trying again.`);
+                    return false;
+                }
+            }
+
+            // 4. Stronger email validation
+            const email = emailInput.value.trim();
+            if (!EMAIL_REGEX.test(email)) {
+                alert('Please enter a valid email address.');
+                emailInput.focus();
+                return false;
+            }
+
+            // 5. Double-click protection
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            // Store submission timestamp
+            localStorage.setItem(RATE_LIMIT_KEY, Date.now().toString());
+
+            // Submit the form
+            form.submit();
+        });
+    </script>
 </body>
 </html>
