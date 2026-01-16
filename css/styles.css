@@ -84,6 +84,10 @@ body {
     border-color: #c0392b;
 }
 
+.window-body {
+    padding: var(--spacing-md);
+}
+
 .submit {
   background: linear-gradient(45deg, #fb4764, #f88d5f) no-repeat;
   border: none;
