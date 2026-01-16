@@ -16,16 +16,54 @@
         <div class="folder-column" role="presentation">
             <div class="folder-icon">
                 <div class="folder-shape"></div>
-                <span class="folder-label">Documents</span>
+                <span class="folder-label">applications</span>
             </div>
             <div class="folder-icon">
                 <div class="folder-shape"></div>
-                <span class="folder-label">Photos</span>
+                <span class="folder-label">companies</span>
             </div>
             <div class="folder-icon">
                 <div class="folder-shape"></div>
-                <span class="folder-label">Memories</span>
+                <span class="folder-label">opportunities</span>
             </div>
+        </div>
+
+        <!-- Media Player (decorative) -->
+        <div class="window media-player" role="presentation" aria-label="Decorative media player">
+            <div class="window-title-bar">
+                <div class="window-controls">
+                    <span class="window-control close"></span>
+                    <span class="window-control minimize"></span>
+                    <span class="window-control maximize"></span>
+                </div>
+                <span class="window-title">now playing</span>
+            </div>
+            <div class="window-body">
+                <div class="player-time">5:08</div>
+                <div class="player-waveform">
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                </div>
+                <div class="player-controls">
+                    <button type="button" class="player-btn" disabled aria-hidden="true">◀◀</button>
+                    <button type="button" class="player-btn play" disabled aria-hidden="true">▶</button>
+                    <button type="button" class="player-btn" disabled aria-hidden="true">▶▶</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop Document Icon (decorative) -->
+        <div class="desktop-file document-icon" role="presentation" aria-label="resume_FINAL.docx shortcut">
+            <div class="document-paper" aria-hidden="true"></div>
+            <span class="file-label">resume_FINAL.docx</span>
         </div>
 
         <!-- Search Window (decorative) -->
@@ -102,37 +140,47 @@
 
         <!-- Speech Bubble (decorative) -->
         <div class="speech-bubble" role="presentation">
-            <span class="speech-bubble-text">LOST MESSAGE</span>
+            <!-- <span class="speech-bubble-text">LOST MESSAGE</span> -->
+            <span class="speech-bubble-text">...</span>
         </div>
 
-        <!-- Media Player (decorative) -->
-        <div class="window media-player" role="presentation" aria-label="Decorative media player">
+        <!-- Notes Window -->
+        <div class="window notes-window" role="region" aria-label="Notes about featured listings">
             <div class="window-title-bar">
                 <div class="window-controls">
                     <span class="window-control close"></span>
                     <span class="window-control minimize"></span>
                     <span class="window-control maximize"></span>
                 </div>
-                <span class="window-title">now playing</span>
+                <span class="window-title">Current top scorers 01.16.docx</span>
             </div>
             <div class="window-body">
-                <div class="player-time">5:08</div>
-                <div class="player-waveform">
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
+                <div class="note">
+                    <p class="note-title note-title--star">
+                        <img src="images/star-svgrepo-com.svg" alt="" class="note-star" aria-hidden="true">
+                        Supervising Producer, Politics Video Podcast
+                    </p>
+                    <p class="note-company">Vox Media</p>
+                    <p class="note-details">New York, NY · $120,000 – $140,000 · Dec 5, 2025</p>
+                    <p class="note-score">Score: <span>100.00</span></p>
                 </div>
-                <div class="player-controls">
-                    <button type="button" class="player-btn" disabled aria-hidden="true">◀◀</button>
-                    <button type="button" class="player-btn play" disabled aria-hidden="true">▶</button>
-                    <button type="button" class="player-btn" disabled aria-hidden="true">▶▶</button>
+                <div class="note">
+                    <p class="note-title">Director, Content Strategy</p>
+                    <p class="note-company">5024 Hulu, LLC</p>
+                    <p class="note-details">Santa Monica, CA · $188,400 – $252,600 · Dec 18, 2025</p>
+                    <p class="note-score">Score: <span>77.32</span></p>
+                </div>
+                <div class="note">
+                    <p class="note-title">Director, MLB Operations - NBC Sports</p>
+                    <p class="note-company">NBCUniversal</p>
+                    <p class="note-details">Stamford, CT · N/A – N/A · Jan 6, 2026</p>
+                    <p class="note-score">Score: <span>69.95</span></p>
+                </div>
+                <div class="note">
+                    <p class="note-title">Director, Platform Operations &amp; Delivery</p>
+                    <p class="note-company">NBCUniversal</p>
+                    <p class="note-details">New York, NY · $210,000 – $210,000 · Jan 9, 2026</p>
+                    <p class="note-score">Score: <span>69.33</span></p>
                 </div>
             </div>
         </div>
@@ -143,6 +191,11 @@
             <div class="loading-track">
                 <div class="loading-fill"></div>
             </div>
+        </div>
+
+        <!-- Robot Illustration (decorative) -->
+        <div class="desktop-robot" role="presentation" aria-hidden="true">
+            <img src="images/robot-neutral-svgrepo-com.svg" alt="" loading="lazy">
         </div>
     </main>
     <!-- Keep JS cache-busting in sync with CSS -->
