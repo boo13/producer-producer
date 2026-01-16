@@ -165,7 +165,44 @@ body {
     background: #c0392b;
 }
 
-/* Legacy form styles removed - now scoped under .hero-window */
+/* Search Window (decorative) */
+.search-window {
+    position: absolute;
+    top: 30px;
+    right: 60px;
+    width: 220px;
+    transform: rotate(2deg);
+}
+
+.search-window .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm);
+    background: #fff;
+    border: var(--border-width) solid var(--window-border);
+    border-radius: var(--radius-sm);
+}
+
+.search-window .search-input-wrapper svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--ink-light);
+    margin-right: var(--spacing-sm);
+    flex-shrink: 0;
+}
+
+.search-window .search-input-wrapper input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: none;
+    font-size: 0.875rem;
+    color: var(--ink-light);
+}
+
+.search-window .search-input-wrapper input::placeholder {
+    color: var(--ink-light);
+}
 
 @media only screen and (max-width: 500px) {
   .desktop {
