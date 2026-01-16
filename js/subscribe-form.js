@@ -1,6 +1,3 @@
-// Track form load time for bot detection
-const formLoadTime = Date.now();
-
 // Rate limiting configuration (20 seconds)
 const RATE_LIMIT_SECONDS = 20;
 const RATE_LIMIT_KEY = 'pp_last_submit';
@@ -14,20 +11,9 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
     const form = this;
     const submitBtn = form.querySelector('.submit');
     const emailInput = document.getElementById('bd-email');
-    const phoneField = document.getElementById('phone');
 
-    // 1. Honeypot check
-    if (phoneField.value !== '') {
-        return false;
-    }
-
-    // 2. Timing-based bot detection (reject if submitted in < 2 seconds)
-    const timeOnPage = (Date.now() - formLoadTime) / 1000;
-    if (timeOnPage < 2) {
-        return false;
-    }
-
-    // 3. Rate limiting check
+    // Note: All anti-spam enforcement must be server-side.
+    // 1. Rate limiting check (UX only)
     const lastSubmit = localStorage.getItem(RATE_LIMIT_KEY);
     if (lastSubmit) {
         const timeSinceLastSubmit = (Date.now() - parseInt(lastSubmit)) / 1000;
@@ -38,7 +24,7 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
         }
     }
 
-    // 4. Stronger email validation
+    // 2. Stronger email validation
     const email = emailInput.value.trim();
     if (!EMAIL_REGEX.test(email)) {
         alert('Please enter a valid email address.');
@@ -46,7 +32,7 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
         return false;
     }
 
-    // 5. Double-click protection
+    // 3. Double-click protection
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
 
