@@ -311,3 +311,52 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
         });
     });
 })();
+
+// Toggle the Recently Deleted window when the trash icon is double-clicked
+(function initRecentlyDeletedWindow() {
+    const trashIcon = document.querySelector('.trash-icon');
+    const deletedWindow = document.querySelector('.recently-deleted-window');
+
+    if (!trashIcon || !deletedWindow) {
+        return;
+    }
+
+    const bringWindowToFront = () => {
+        const windows = document.querySelectorAll('.desktop .window');
+        let maxZ = 0;
+
+        windows.forEach((win) => {
+            const zIndex = parseInt(window.getComputedStyle(win).zIndex || '0', 10);
+            if (!Number.isNaN(zIndex)) {
+                maxZ = Math.max(maxZ, zIndex);
+            }
+        });
+
+        deletedWindow.style.zIndex = String(maxZ + 1);
+    };
+
+    const setWindowVisibility = (shouldShow) => {
+        deletedWindow.classList.toggle('is-hidden', !shouldShow);
+        deletedWindow.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+
+        if (shouldShow) {
+            bringWindowToFront();
+        }
+    };
+
+    const toggleWindow = () => {
+        const isHidden = deletedWindow.classList.contains('is-hidden');
+        setWindowVisibility(isHidden);
+    };
+
+    trashIcon.addEventListener('dblclick', () => {
+        toggleWindow();
+    });
+
+    trashIcon.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleWindow();
+        }
+    });
+})();

@@ -66,6 +66,17 @@
             <span class="file-label">resume_FINAL.docx</span>
         </div>
 
+        <!-- Trash Can Icon (Heroicons MIT) -->
+        <div class="desktop-icon trash-icon" role="button" aria-label="Recently deleted items" tabindex="0"
+            data-opens="recently-deleted-window">
+            <svg class="trash-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342-.04.682-.092 1.02-.158m-1.02.158L18.16 19.673A2.25 2.25 0 0 1 15.917 21H8.083a2.25 2.25 0 0 1-2.244-2.327L5.772 5.79m13.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .555c.338.066.678.118 1.02.158m0 0L4.772 19.673A2.25 2.25 0 0 0 7.017 22h7.966a2.25 2.25 0 0 0 2.244-2.327L16.956 6.21m-12-.555A48.11 48.11 0 0 1 12 5c2.01 0 4.003.117 5.978.343" />
+            </svg>
+            <span class="file-label">trash</span>
+        </div>
+
         <!-- Search Window (decorative) -->
         <div class="window search-window" role="presentation" aria-label="Decorative search window">
             <div class="window-title-bar">
@@ -182,6 +193,31 @@
                     <p class="note-details">New York, NY · $210,000 – $210,000 · Jan 9, 2026</p>
                     <p class="note-score">Score: <span>69.33</span></p>
                 </div>
+            </div>
+        </div>
+
+        <!-- Recently Deleted Window -->
+        <div class="window recently-deleted-window is-hidden" role="dialog"
+            aria-label="Recently deleted log entries" aria-hidden="true">
+            <div class="window-title-bar">
+                <div class="window-controls">
+                    <span class="window-control close"></span>
+                    <span class="window-control minimize"></span>
+                    <span class="window-control maximize"></span>
+                </div>
+                <span class="window-title">Recently deleted</span>
+            </div>
+            <div class="window-body">
+                <ul class="deleted-log" aria-live="polite">
+                    <li>Coordinating Producer...WF Productions...NY...$165-$185k...73%...Filter Fail</li>
+                    <li>Supervising Story Editor...Sunbeam Studios...NY...$210-$250k...68%...Filter Fail</li>
+                    <li>EP, Branded Series...Atlas Audio...NY...$195-$230k...41%...Score Low</li>
+                    <li>Director, Studio Ops...Modo Media...NY...$210-$250k...56%...Filter Fail</li>
+                    <li>Head of Live Events...Chromecast Collective...NY...$250-$300k...60%...Expired Listing</li>
+                    <li>Senior Producer, News...Rollcall Network...NY...$180-$210k...52%...Filter Fail</li>
+                    <li>Creative PM...Parallel Play...NY...$150-$180k...44%...Spam Match</li>
+                    <li>Editorial Lead...Beacon Works...NY...$210-$250k...39%...Filter Fail</li>
+                </ul>
             </div>
         </div>
 

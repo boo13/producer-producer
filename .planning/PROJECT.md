@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A redesigned single-page landing page for Producer Producer that transforms the current minimalist subscription form into a playful retro desktop collage. The page mimics vintage operating system aesthetics with beige windows, folder icons, speech bubbles, and system dialogs—all while preserving the functional Buttondown email subscription form at its center.
+A single-page landing page for Producer Producer featuring a playful retro desktop collage aesthetic. The page mimics vintage operating system visuals with beige windows, folder icons, speech bubbles, and system dialogs—all surrounding a functional Buttondown email subscription form.
 
 ## Core Value
 
@@ -17,22 +17,23 @@ The subscription form must remain prominently accessible, high-contrast, and ful
 - ✓ Confetti animation on successful submission — existing
 - ✓ Responsive layout (desktop and mobile) — existing
 - ✓ GitHub Pages deployment — existing
+- ✓ Retro desktop visual system (dark slate background, beige windows, 2px borders, drop shadows) — v1.0
+- ✓ Reusable `.window` component with title bar, window controls, and body sections — v1.0
+- ✓ Hero window containing title, description, and subscription form — v1.0
+- ✓ Decorative supporting windows (search bar, system error dialog, lost message bubble) — v1.0
+- ✓ Folder icons column mimicking file browser — v1.0
+- ✓ Media player widget with playback controls aesthetic — v1.0
+- ✓ Loading bar decorative element — v1.0
+- ✓ CSS custom properties for consistent palette and sizing — v1.0
+- ✓ Grid/flexbox layout for collage arrangement on desktop — v1.0
+- ✓ Vertical stack layout for mobile (<768px) — v1.0
+- ✓ Rotation modifiers for tilted window effect (`.tilt-left`, `.tilt-right`) — v1.0
+- ✓ ARIA labels for dialog-like decorative elements — v1.0
+- ✓ Preserve existing form accessibility and keyboard navigation — v1.0
 
 ### Active
 
-- [ ] Retro desktop visual system (dark slate background, beige windows, 2px borders, drop shadows)
-- [ ] Reusable `.window` component with title bar, window controls, and body sections
-- [ ] Hero window containing title, description, and subscription form
-- [ ] Decorative supporting windows (search bar, system error dialog, lost message bubble)
-- [ ] Folder icons column mimicking file browser
-- [ ] Media player widget with playback controls aesthetic
-- [ ] Loading bar decorative element
-- [ ] CSS custom properties for consistent palette and sizing
-- [ ] Grid/flexbox layout for collage arrangement on desktop
-- [ ] Vertical stack layout for mobile (<768px)
-- [ ] Rotation modifiers for tilted window effect (`.tilt-left`, `.tilt-right`)
-- [ ] ARIA labels for dialog-like decorative elements
-- [ ] Preserve existing form accessibility and keyboard navigation
+(None — v1.0 complete)
 
 ### Out of Scope
 
@@ -44,13 +45,13 @@ The subscription form must remain prominently accessible, high-contrast, and ful
 
 ## Context
 
-**Existing site:** Simple landing page with gradient background, centered white card, header image, and subscription form. Works well functionally but lacks personality.
+**Shipped v1.0** with 646 lines HTML/CSS.
 
-**Design reference:** Retro desktop collage (see `Ref/Ref1.jpg`) with stacked windows, folders, system dialogs, and vintage OS aesthetic. Dark gray desktop background with cream/beige UI elements.
+**Tech stack:** Static HTML/CSS/JS hosted on GitHub Pages. External dependencies: Buttondown API, canvas-confetti CDN, Google Fonts (Open Sans).
 
-**Technical environment:** Static HTML/CSS/JS hosted on GitHub Pages. No build step. External dependencies: Buttondown API, canvas-confetti CDN, Google Fonts (Open Sans).
+**What shipped:** Full retro desktop collage with hero window (subscription form), search window, error dialog, speech bubble, folder icons, media player, and loading bar. Responsive layout hides decorative elements on mobile (<768px) to focus on the form.
 
-**User feedback themes:** Site needs more visual identity and personality to stand out; current design is generic.
+**Known issues:** None.
 
 ## Constraints
 
@@ -64,10 +65,14 @@ The subscription form must remain prominently accessible, high-contrast, and ful
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Static collage (no drag-drop) | Simplicity; PRD explicitly excludes interactive windows | — Pending |
-| CSS Grid for layout | Modern, flexible layout without JS | — Pending |
-| CSS custom properties for theming | Easy palette consistency, future theme changes | — Pending |
-| Keep existing form JS | Working spam protection; no need to rewrite | — Pending |
+| Static collage (no drag-drop) | Simplicity; PRD explicitly excludes interactive windows | ✓ Good |
+| CSS Grid/Flexbox for layout | Modern, flexible layout without JS | ✓ Good |
+| CSS custom properties for theming | Easy palette consistency, future theme changes | ✓ Good |
+| Keep existing form JS | Working spam protection; no need to rewrite | ✓ Good |
+| Controls positioned left (macOS-style) | Matches reference image aesthetic | ✓ Good |
+| Hide decorative elements on mobile | Focus on form conversion, simpler than repositioning | ✓ Good |
+| 768px mobile breakpoint | Standard tablet/phone threshold | ✓ Good |
+| Pure CSS folder/waveform shapes | No images needed, smaller page weight | ✓ Good |
 
 ---
-*Last updated: 2026-01-16 after initialization*
+*Last updated: 2026-01-16 after v1.0 milestone*

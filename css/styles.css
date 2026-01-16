@@ -31,7 +31,12 @@
 }
 
 body {
-    background: var(--desktop);
+    /* Add a subtle radial vignette so the center of the desktop feels grounded */
+    background: radial-gradient(circle at center,
+            rgba(0, 0, 0, 0.18) 0%,
+            rgba(0, 0, 0, 0.1) 35%,
+            rgba(0, 0, 0, 0) 70%),
+        var(--desktop);
     background-size: cover;
     min-height: 100vh;
 }
@@ -346,8 +351,8 @@ body {
     width: 22px;
     height: 22px;
     position: absolute;
-    top: -10px;
-    left: -15px;
+    top: -8px;
+    left: -17px;
     pointer-events: none;
 }
 
@@ -486,6 +491,33 @@ body {
     align-items: center;
     gap: var(--spacing-xs);
     transform: rotate(-1deg);
+}
+
+.desktop-icon {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+    cursor: default;
+}
+
+.trash-icon {
+    bottom: 220px;
+    right: 80px;
+    transform: rotate(1deg);
+    gap: var(--spacing-sm);
+}
+
+.trash-icon-svg {
+    width: 62px;
+    height: 62px;
+    padding: var(--spacing-sm);
+    border: var(--border-width) solid var(--window-border);
+    border-radius: var(--radius-sm);
+    background: var(--window-bg);
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
+    color: var(--ink);
 }
 
 .document-paper {
@@ -744,6 +776,43 @@ body {
     border-radius: 2px;
 }
 
+.recently-deleted-window {
+    position: absolute;
+    bottom: 60px;
+    right: 40px;
+    width: 320px;
+    transform: rotate(1.5deg);
+}
+
+.deleted-log {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-family: "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", monospace;
+    font-size: 0.72rem;
+    color: var(--ink);
+    line-height: 1.4;
+}
+
+.deleted-log li {
+    border-bottom: 1px dotted rgba(42, 42, 46, 0.3);
+    padding-bottom: 4px;
+}
+
+.deleted-log li:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+}
+
 /* Mobile layout - hide decorative elements, center hero */
 @media only screen and (max-width: 768px) {
 
@@ -755,7 +824,9 @@ body {
     .media-player,
     .loading-bar,
     .document-icon,
-    .desktop-robot {
+    .desktop-robot,
+    .recently-deleted-window,
+    .trash-icon {
         display: none;
     }
 
