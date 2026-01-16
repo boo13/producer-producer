@@ -339,6 +339,81 @@ body {
     text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
 }
 
+/* Media Player (decorative) */
+.media-player {
+    position: absolute;
+    top: 140px;
+    right: 40px;
+    width: 180px;
+    transform: rotate(-2deg);
+}
+
+.media-player .window-body {
+    padding: var(--spacing-sm);
+    text-align: center;
+}
+
+.player-time {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--ink);
+    font-family: monospace;
+    margin-bottom: var(--spacing-sm);
+}
+
+.player-waveform {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 3px;
+    height: 32px;
+    margin-bottom: var(--spacing-sm);
+}
+
+.wave-bar {
+    width: 6px;
+    background: var(--accent);
+    border-radius: 2px;
+}
+
+.wave-bar:nth-child(1) { height: 40%; }
+.wave-bar:nth-child(2) { height: 70%; }
+.wave-bar:nth-child(3) { height: 50%; }
+.wave-bar:nth-child(4) { height: 90%; }
+.wave-bar:nth-child(5) { height: 60%; }
+.wave-bar:nth-child(6) { height: 100%; }
+.wave-bar:nth-child(7) { height: 45%; }
+.wave-bar:nth-child(8) { height: 75%; }
+.wave-bar:nth-child(9) { height: 35%; }
+.wave-bar:nth-child(10) { height: 55%; }
+
+.player-controls {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
+.player-btn {
+    width: 28px;
+    height: 28px;
+    background: var(--button-face);
+    border: 2px solid;
+    border-color: #fff #808080 #808080 #fff;
+    border-radius: 50%;
+    font-size: 0.625rem;
+    color: var(--ink);
+    cursor: default;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.player-btn.play {
+    width: 36px;
+    height: 36px;
+    font-size: 0.875rem;
+}
+
 @media only screen and (max-width: 500px) {
   .desktop {
     padding: var(--spacing-md);
