@@ -414,6 +414,39 @@ body {
     font-size: 0.875rem;
 }
 
+/* Loading Bar (decorative) */
+.loading-bar {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) rotate(1deg);
+    width: 200px;
+}
+
+.loading-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--window-bg);
+    margin-bottom: var(--spacing-xs);
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.loading-track {
+    height: 16px;
+    background: var(--window-bg);
+    border: var(--border-width) solid var(--window-border);
+    border-radius: var(--radius-sm);
+    box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.2);
+    padding: 2px;
+}
+
+.loading-fill {
+    width: 65%;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+}
+
 @media only screen and (max-width: 500px) {
   .desktop {
     padding: var(--spacing-md);
