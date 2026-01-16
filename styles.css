@@ -130,5 +130,7 @@ body {
   left: -5000px;
   opacity: 0;
   pointer-events: none;
+  height: 0;
+  width: 0;
 }
 

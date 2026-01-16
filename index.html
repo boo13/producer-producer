@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subscribe - Producer Producer</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -83,8 +84,17 @@
             // Store submission timestamp
             localStorage.setItem(RATE_LIMIT_KEY, Date.now().toString());
 
-            // Submit the form
-            form.submit();
+            // Trigger confetti animation
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+
+            // Submit the form after a brief delay to show confetti
+            setTimeout(function() {
+                form.submit();
+            }, 300);
         });
     </script>
 </body>
