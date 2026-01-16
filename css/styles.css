@@ -1,4 +1,25 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap");
+
+:root {
+    /* Colors */
+    --desktop: #3d3d3d;
+    --window-bg: #f5f0e1;
+    --window-border: #2a2a2e;
+    --title-bar: #d4cfc3;
+    --accent: #e74c3c;
+    --ink: #2a2a2e;
+    --ink-light: #636363;
+
+    /* Sizing */
+    --border-width: 2px;
+    --shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+    --radius-sm: 4px;
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -7,11 +28,18 @@
 }
 
 body {
-    background: linear-gradient(45deg, #fb4764, #f88d5f) no-repeat center center fixed;
-      -webkit-background-size: cover;
-  -moz-background-size: cover;
-  -o-background-size: cover;
-  background-size: cover;
+    background: var(--desktop);
+    background-size: cover;
+    min-height: 100vh;
+}
+
+.desktop {
+    min-height: 100vh;
+    padding: var(--spacing-lg);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 50px;
 }
 
 .submit {
@@ -89,7 +117,6 @@ body {
   width: 769px;
   height: 486px;
   border-radius: 50px;
-  margin: 50px auto;
 }
 
 @media only screen and (max-width: 500px) {
