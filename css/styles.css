@@ -292,6 +292,53 @@ body {
     letter-spacing: 0.05em;
 }
 
+/* Folder Icons (decorative) */
+.folder-column {
+    position: absolute;
+    top: 40px;
+    left: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.folder-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.folder-shape {
+    width: 48px;
+    height: 40px;
+    background: var(--window-bg);
+    border: var(--border-width) solid var(--window-border);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) var(--radius-sm);
+    position: relative;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.folder-shape::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    width: 20px;
+    height: 10px;
+    background: var(--window-bg);
+    border: var(--border-width) solid var(--window-border);
+    border-bottom: none;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.folder-label {
+    font-size: 0.625rem;
+    color: var(--window-bg);
+    text-align: center;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
 @media only screen and (max-width: 500px) {
   .desktop {
     padding: var(--spacing-md);
