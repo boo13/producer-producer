@@ -42,6 +42,14 @@ body {
     padding-top: 50px;
 }
 
+.window {
+    background: var(--window-bg);
+    border: var(--border-width) solid var(--window-border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
 .submit {
   background: linear-gradient(45deg, #fb4764, #f88d5f) no-repeat;
   border: none;
