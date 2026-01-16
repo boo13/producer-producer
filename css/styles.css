@@ -456,14 +456,30 @@ body {
     border-radius: 2px;
 }
 
-@media only screen and (max-width: 500px) {
+/* Mobile layout - hide decorative elements, center hero */
+@media only screen and (max-width: 768px) {
+  /* Hide all decorative elements on mobile */
+  .folder-column,
+  .search-window,
+  .error-dialog,
+  .speech-bubble,
+  .media-player,
+  .loading-bar {
+    display: none;
+  }
+
+  /* Desktop wrapper: vertical stack with centered hero */
   .desktop {
+    flex-direction: column;
+    align-items: center;
     padding: var(--spacing-md);
     padding-top: var(--spacing-lg);
   }
 
+  /* Hero window: full width, remains visible */
   .hero-window {
     width: 100%;
+    max-width: 400px;
   }
 
   .hero-window .title {
