@@ -47,3 +47,4 @@ Target: producer-producer.com
 - This is the public version of an existing private API
 - Focus on UX for video producers seeking work
 - Job classification logic distinguishes video producers from other "producer" roles
+- When shipping CSS or JS updates, bump the `?v=` cache-busting string in `index.html`

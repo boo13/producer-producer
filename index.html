@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subscribe - Producer Producer</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <!-- Append a version query to bust CDN cache when styles change -->
+    <link rel="stylesheet" href="css/styles.css?v=20260116">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 <body>
@@ -139,6 +140,7 @@
         </div>
     </div>
     </main>
-    <script src="js/subscribe-form.js"></script>
+    <!-- Keep JS cache-busting in sync with CSS -->
+    <script src="js/subscribe-form.js?v=20260116"></script>
 </body>
 </html>
