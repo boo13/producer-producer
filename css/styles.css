@@ -91,6 +91,15 @@ body {
     padding: var(--spacing-md);
 }
 
+/* Rotation modifier classes */
+.tilt-left {
+    transform: rotate(-3deg);
+}
+
+.tilt-right {
+    transform: rotate(3deg);
+}
+
 .hero-window {
     width: 400px;
     max-width: 100%;
