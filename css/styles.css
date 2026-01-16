@@ -18,6 +18,9 @@
     --spacing-sm: 8px;
     --spacing-md: 16px;
     --spacing-lg: 24px;
+
+    /* Retro button face */
+    --button-face: #d4d0c8;
 }
 
 * {
@@ -202,6 +205,45 @@ body {
 
 .search-window .search-input-wrapper input::placeholder {
     color: var(--ink-light);
+}
+
+/* Error Dialog (decorative) */
+.error-dialog {
+    position: absolute;
+    bottom: 80px;
+    left: 40px;
+    width: 260px;
+    transform: rotate(-3deg);
+}
+
+.error-dialog .error-message {
+    font-size: 0.875rem;
+    color: var(--ink);
+    margin-bottom: var(--spacing-md);
+    line-height: 1.4;
+}
+
+.error-dialog .dialog-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+}
+
+.error-dialog .dialog-btn {
+    background: var(--button-face);
+    border: 2px solid;
+    border-color: #fff #808080 #808080 #fff;
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: 0.75rem;
+    font-family: inherit;
+    color: var(--ink);
+    cursor: default;
+    box-shadow: 1px 1px 0 #000;
+}
+
+.error-dialog .dialog-btn:active {
+    border-color: #808080 #fff #fff #808080;
+    box-shadow: none;
 }
 
 @media only screen and (max-width: 500px) {
