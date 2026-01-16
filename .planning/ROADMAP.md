@@ -15,7 +15,7 @@ None
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Foundation** - CSS variables, reset, desktop background
-- [ ] **Phase 2: Window System** - Reusable window component styling
+- [x] **Phase 2: Window System** - Reusable window component styling
 - [ ] **Phase 3: Hero & Form** - Main subscription window with form
 - [ ] **Phase 4: Decorative Elements** - Supporting windows, folders, media player
 - [ ] **Phase 5: Responsive & Polish** - Mobile layout, accessibility, final touches
@@ -38,7 +38,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 02-01: Window component CSS with title bar and controls
+- [x] 02-01: Window component CSS with title bar and controls
 
 ### Phase 3: Hero & Form
 **Goal**: Build the hero window containing title, description, and subscription form; preserve form functionality
@@ -76,7 +76,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 1/1 | Complete | 2026-01-16 |
-| 2. Window System | 0/1 | Not started | - |
+| 2. Window System | 1/1 | Complete | 2026-01-16 |
 | 3. Hero & Form | 0/1 | Not started | - |
 | 4. Decorative Elements | 0/2 | Not started | - |
 | 5. Responsive & Polish | 0/1 | Not started | - |
