@@ -246,6 +246,52 @@ body {
     box-shadow: none;
 }
 
+/* Speech Bubble (decorative) */
+.speech-bubble {
+    position: absolute;
+    bottom: 30px;
+    right: 80px;
+    background: var(--window-bg);
+    border: var(--border-width) solid var(--window-border);
+    border-radius: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    box-shadow: var(--shadow);
+    transform: rotate(3deg);
+}
+
+.speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 20px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 12px solid var(--window-border);
+}
+
+.speech-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 22px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 10px solid var(--window-bg);
+    z-index: 1;
+}
+
+.speech-bubble-text {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
 @media only screen and (max-width: 500px) {
   .desktop {
     padding: var(--spacing-md);
