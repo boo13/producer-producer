@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-16)
 
 **Core value:** The subscription form must remain prominently accessible, high-contrast, and fully functional—everything else is visual enhancement.
-**Current focus:** Phase 4 — Decorative Elements
+**Current focus:** Phase 5 — Responsive & Polish
 
 ## Current Position
 
 Phase: 4 of 5 (Decorative Elements)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-16 — Completed 04-01-PLAN.md
+Plan: 2 of 2 complete
+Status: Phase 4 complete, ready for Phase 5
+Last activity: 2026-01-16 — Completed 04-02-PLAN.md
 
-Progress: ██████░░░░ 60%
+Progress: ████████░░ 80%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 5
 - Average duration: 3 min
-- Total execution time: 12 min
+- Total execution time: 14 min
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: ██████░░░░ 60%
 | 1. Foundation | 1/1 | 5 min | 5 min |
 | 2. Window System | 1/1 | 1 min | 1 min |
 | 3. Hero & Form | 1/1 | 4 min | 4 min |
-| 4. Decorative Elements | 1/2 | 2 min | 2 min |
+| 4. Decorative Elements | 2/2 | 4 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (5 min), 02-01 (1 min), 03-01 (4 min), 04-01 (2 min)
+- Last 5 plans: 01-01 (5 min), 02-01 (1 min), 03-01 (4 min), 04-01 (2 min), 04-02 (2 min)
 - Trend: —
 
 ## Accumulated Context
@@ -52,6 +52,8 @@ Recent decisions affecting current work:
 - Phase 3: White input background with dark border for contrast
 - Phase 4: Added --button-face CSS variable for retro button styling
 - Phase 4: CSS border technique for speech bubble pointer
+- Phase 4: Pure CSS folder shape using ::before pseudo-element
+- Phase 4: Waveform bars with nth-child height variation
 
 ### Deferred Issues
 
@@ -64,5 +66,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-16
-Stopped at: Completed 04-01-PLAN.md, ready for 04-02
+Stopped at: Phase 4 complete, ready for Phase 5
 Resume file: None
