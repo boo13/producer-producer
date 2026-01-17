@@ -58,6 +58,16 @@ body {
     position: relative;
 }
 
+.space-invader {
+    position: absolute;
+    top: var(--spacing-md);
+    left: 180px;
+    width: 96px;
+    height: 96px;
+    image-rendering: pixelated;
+    pointer-events: none;
+}
+
 .window {
     background: var(--window-bg);
     border: var(--border-width) solid var(--window-border);
