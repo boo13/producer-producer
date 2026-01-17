@@ -84,17 +84,119 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
             windowRects.set(win, win.getBoundingClientRect());
         });
 
+        const Z_INDEX_RANGES = {
+            decorative: { base: 1, seed: 10, max: 99 },
+            functional: { base: 100, seed: 110, max: 999 }
+        };
+
         let activeWindow = null;
         let activePointerId = null;
         let startX = 0;
         let startY = 0;
         let baseLeft = 0;
         let baseTop = 0;
-        let zIndexSeed = 10;
+        let zIndexSeeds = {
+            decorative: Z_INDEX_RANGES.decorative.seed,
+            functional: Z_INDEX_RANGES.functional.seed
+        };
+
+        const windowStates = new WeakMap();
+
+        const toggleMinimize = (win) => {
+            const state = windowStates.get(win);
+            const body = win.querySelector('.window-body');
+
+            if (!state || !body) return;
+
+            // Get computed padding values
+            const computedStyle = window.getComputedStyle(body);
+            const paddingTop = computedStyle.paddingTop;
+            const paddingBottom = computedStyle.paddingBottom;
+
+            if (state.isMinimized) {
+                // Restore
+                body.classList.remove('is-minimized');
+                body.classList.add('is-restoring');
+
+                // Force starting values
+                body.style.maxHeight = '0px';
+                body.style.paddingTop = '0px';
+                body.style.paddingBottom = '0px';
+                body.style.opacity = '0';
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        body.style.maxHeight = state.normalBodyHeight + 'px';
+                        body.style.paddingTop = state.originalPaddingTop;
+                        body.style.paddingBottom = state.originalPaddingBottom;
+                        body.style.opacity = '1';
+                    });
+                });
+
+                const cleanup = (e) => {
+                    if (e.propertyName === 'max-height') {
+                        body.classList.remove('is-restoring');
+                        body.style.maxHeight = '';
+                        body.style.paddingTop = '';
+                        body.style.paddingBottom = '';
+                        body.style.opacity = '';
+                        body.removeEventListener('transitionend', cleanup);
+                    }
+                };
+                body.addEventListener('transitionend', cleanup);
+
+                state.isMinimized = false;
+                win.setAttribute('aria-expanded', 'true');
+            } else {
+                // Minimize - store original values
+                state.normalBodyHeight = body.scrollHeight;
+                state.originalPaddingTop = paddingTop;
+                state.originalPaddingBottom = paddingBottom;
+
+                // Set explicit starting values
+                body.style.maxHeight = body.scrollHeight + 'px';
+                body.style.paddingTop = paddingTop;
+                body.style.paddingBottom = paddingBottom;
+                body.style.opacity = '1';
+                body.classList.add('is-minimizing');
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        body.style.maxHeight = '0px';
+                        body.style.paddingTop = '0px';
+                        body.style.paddingBottom = '0px';
+                        body.style.opacity = '0';
+                    });
+                });
+
+                const cleanup = (e) => {
+                    if (e.propertyName === 'max-height') {
+                        body.classList.remove('is-minimizing');
+                        body.classList.add('is-minimized');
+                        body.removeEventListener('transitionend', cleanup);
+                    }
+                };
+                body.addEventListener('transitionend', cleanup);
+
+                state.isMinimized = true;
+                win.setAttribute('aria-expanded', 'false');
+            }
+        };
 
         const bringToFront = (win) => {
-            zIndexSeed += 1;
-            win.style.zIndex = zIndexSeed.toString();
+            const tier = win.getAttribute('data-window-tier') || 'decorative';
+            const range = Z_INDEX_RANGES[tier];
+
+            zIndexSeeds[tier] = Math.min(zIndexSeeds[tier] + 1, range.max);
+            win.style.zIndex = String(zIndexSeeds[tier]);
+        };
+
+        const windowPointerDown = (win, titleBar) => (event) => {
+            // Only handle if click is NOT on title bar (title bar has its own handler)
+            if (titleBar.contains(event.target)) {
+                return;
+            }
+            bringToFront(win);
         };
 
         const stopDragging = () => {
@@ -143,7 +245,9 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
         document.addEventListener('pointerup', onPointerUp);
         document.addEventListener('pointercancel', onPointerUp);
 
-        windows.forEach((win, index) => {
+        const tierIndexes = { decorative: 0, functional: 0 };
+
+        windows.forEach((win) => {
             const titleBar = win.querySelector('.window-title-bar');
             if (!titleBar) {
                 return;
@@ -173,7 +277,10 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
             win.style.bottom = 'auto';
             win.style.margin = '0';
             if (!win.style.zIndex) {
-                win.style.zIndex = String(zIndexSeed + index);
+                const tier = win.getAttribute('data-window-tier') || 'decorative';
+                const range = Z_INDEX_RANGES[tier];
+                win.style.zIndex = String(range.seed + tierIndexes[tier]);
+                tierIndexes[tier]++;
             }
 
             const pointerDown = (event) => {
@@ -201,6 +308,48 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
 
             titleBar.addEventListener('pointerdown', pointerDown);
             titleBarListeners.push({ element: titleBar, handler: pointerDown });
+
+            const windowClickHandler = windowPointerDown(win, titleBar);
+            win.addEventListener('pointerdown', windowClickHandler);
+            titleBarListeners.push({ element: win, handler: windowClickHandler });
+
+            // Initialize state
+            windowStates.set(win, {
+                isMinimized: false,
+                normalBodyHeight: null
+            });
+
+            // Double-click detection
+            let clickCount = 0;
+            let clickTimer = null;
+
+            const handleTitleBarClick = (event) => {
+                clickCount++;
+
+                if (clickCount === 1) {
+                    clickTimer = setTimeout(() => {
+                        clickCount = 0;
+                    }, 300);
+                } else if (clickCount === 2) {
+                    clearTimeout(clickTimer);
+                    clickCount = 0;
+                    toggleMinimize(win);
+                }
+            };
+
+            titleBar.addEventListener('click', handleTitleBarClick);
+            titleBarListeners.push({ element: titleBar, handler: handleTitleBarClick, type: 'click' });
+
+            // Minimize button click handler
+            const minimizeBtn = win.querySelector('.window-control.minimize');
+            if (minimizeBtn) {
+                const handleMinimizeClick = (event) => {
+                    event.stopPropagation(); // Prevent triggering title bar double-click
+                    toggleMinimize(win);
+                };
+                minimizeBtn.addEventListener('click', handleMinimizeClick);
+                titleBarListeners.push({ element: minimizeBtn, handler: handleMinimizeClick, type: 'click' });
+            }
         });
 
         teardown = () => {
@@ -217,8 +366,8 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
                 }
             });
 
-            titleBarListeners.forEach(({ element, handler }) => {
-                element.removeEventListener('pointerdown', handler);
+            titleBarListeners.forEach(({ element, handler, type }) => {
+                element.removeEventListener(type || 'pointerdown', handler);
             });
 
             document.removeEventListener('pointermove', onPointerMove);
@@ -308,25 +457,66 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
     }
 
     const bringWindowToFront = () => {
+        const tier = deletedWindow.getAttribute('data-window-tier') || 'decorative';
         const windows = document.querySelectorAll('.desktop .window');
-        let maxZ = 0;
+        let maxZ = tier === 'decorative' ? 1 : 100;
+        const tierMax = tier === 'decorative' ? 99 : 999;
 
         windows.forEach((win) => {
-            const zIndex = parseInt(window.getComputedStyle(win).zIndex || '0', 10);
-            if (!Number.isNaN(zIndex)) {
-                maxZ = Math.max(maxZ, zIndex);
+            const winTier = win.getAttribute('data-window-tier') || 'decorative';
+            if (winTier === tier) {
+                const zIndex = parseInt(window.getComputedStyle(win).zIndex || '0', 10);
+                if (!Number.isNaN(zIndex)) {
+                    maxZ = Math.max(maxZ, zIndex);
+                }
             }
         });
 
-        deletedWindow.style.zIndex = String(maxZ + 1);
+        deletedWindow.style.zIndex = String(Math.min(maxZ + 1, tierMax));
     };
 
     const setWindowVisibility = (shouldShow) => {
-        deletedWindow.classList.toggle('is-hidden', !shouldShow);
         deletedWindow.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
 
         if (shouldShow) {
             bringWindowToFront();
+
+            // Get positions of trash icon and window
+            const trashRect = trashIcon.getBoundingClientRect();
+            const windowRect = deletedWindow.getBoundingClientRect();
+
+            // Calculate the offset from window's final position to trash icon
+            const deltaX = trashRect.left - windowRect.left;
+            const deltaY = trashRect.top - windowRect.top;
+
+            // Remove is-hidden to make element visible
+            deletedWindow.classList.remove('is-hidden');
+
+            // Animate from trash icon position to final position using Web Animations API
+            const animation = deletedWindow.animate([
+                {
+                    opacity: 0,
+                    transform: `translate(${deltaX}px, ${deltaY}px) scale(0.2)`,
+                    offset: 0
+                },
+                {
+                    opacity: 1,
+                    transform: 'translate(0, 0) scale(1)',
+                    offset: 1
+                }
+            ], {
+                duration: 400,
+                easing: 'cubic-bezier(0.34, 1, 0.64, 1)',
+                fill: 'forwards'
+            });
+
+            // Clean up after animation completes
+            animation.onfinish = () => {
+                deletedWindow.style.transform = '';
+                deletedWindow.style.opacity = '';
+            };
+        } else {
+            deletedWindow.classList.add('is-hidden');
         }
     };
 

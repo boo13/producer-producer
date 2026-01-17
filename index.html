@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Producer-Producer</title>
     <!-- Manual cache-busting: bump ?v=YYYYMMDD whenever CSS changes. -->
-    <link rel="stylesheet" href="css/styles.css?v=20260116">
+    <link rel="stylesheet" href="css/styles.css?v=20260116b">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 
@@ -29,7 +29,7 @@
         </div>
 
         <!-- Media Player (decorative) -->
-        <div class="window media-player" role="presentation" aria-label="Decorative media player">
+        <div class="window media-player" data-window-tier="decorative" data-window-type="application" role="presentation" aria-label="Decorative media player" aria-expanded="true">
             <div class="window-title-bar">
                 <div class="window-controls">
                     <span class="window-control close"></span>
@@ -78,7 +78,7 @@
         </div>
 
         <!-- Search Window (decorative) -->
-        <div class="window search-window" role="presentation" aria-label="Decorative search window">
+        <div class="window search-window" data-window-tier="decorative" data-window-type="application" role="presentation" aria-label="Decorative search window" aria-expanded="true">
             <div class="window-title-bar">
                 <div class="window-controls">
                     <span class="window-control close"></span>
@@ -99,7 +99,7 @@
             </div>
         </div>
 
-        <div class="window hero-window">
+        <div class="window hero-window" data-window-tier="functional" data-window-type="alert" aria-expanded="true">
             <div class="window-title-bar">
                 <div class="window-controls">
                     <span class="window-control close"></span>
@@ -129,7 +129,7 @@
         </div>
 
         <!-- System Error Dialog (decorative) -->
-        <div class="window error-dialog" role="dialog" aria-label="Decorative system error dialog">
+        <div class="window error-dialog" data-window-tier="decorative" data-window-type="application" role="dialog" aria-label="Decorative system error dialog" aria-expanded="true">
             <div class="window-title-bar">
                 <div class="window-controls">
                     <span class="window-control close"></span>
@@ -153,7 +153,7 @@
         </div>
 
         <!-- Notes Window -->
-        <div class="window notes-window" role="region" aria-label="Notes about featured listings">
+        <div class="window notes-window" data-window-tier="functional" data-window-type="explorer" role="region" aria-label="Notes about featured listings" aria-expanded="true">
             <div class="window-title-bar">
                 <div class="window-controls">
                     <span class="window-control close"></span>
@@ -194,8 +194,8 @@
         </div>
 
         <!-- Recently Deleted Window -->
-        <div class="window recently-deleted-window is-hidden" role="dialog"
-            aria-label="Recently deleted log entries" aria-hidden="true">
+        <div class="window recently-deleted-window is-hidden" data-window-tier="decorative" data-window-type="explorer" role="dialog"
+            aria-label="Recently deleted log entries" aria-hidden="true" aria-expanded="true">
             <div class="window-title-bar">
                 <div class="window-controls">
                     <span class="window-control close"></span>
@@ -232,7 +232,7 @@
         </div>
     </main>
     <!-- Manual cache-busting: keep in sync with the CSS version above. -->
-    <script src="js/subscribe-form.js?v=20260116"></script>
+    <script src="js/subscribe-form.js?v=20260116b"></script>
 </body>
 
 </html>

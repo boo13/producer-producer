@@ -10,6 +10,12 @@
     --ink: #2a2a2e;
     --ink-light: #636363;
 
+    /* Z-Index hierarchy */
+    --z-decorative-base: 1;
+    --z-decorative-max: 99;
+    --z-functional-base: 100;
+    --z-functional-max: 999;
+
     /* Sizing */
     --border-width: 2px;
     --shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
@@ -97,8 +103,126 @@ body {
     border-color: #c0392b;
 }
 
+.window-control.minimize {
+    cursor: pointer;
+}
+
+.window-control.minimize:hover {
+    background: #e0dcd0;
+}
+
 .window-body {
     padding: var(--spacing-md);
+}
+
+/* Window tiers */
+.window[data-window-tier="decorative"] {
+    z-index: var(--z-decorative-base);
+}
+
+.window[data-window-tier="functional"] {
+    z-index: var(--z-functional-base);
+}
+
+/* Window types */
+
+/* Application windows - keep existing styling */
+.window[data-window-type="application"] {
+    /* Base styling from .window class */
+}
+
+/* Alert windows - warm orange tint */
+.window[data-window-type="alert"] {
+    background: #fff5e6;
+    border-width: 3px;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.4);
+}
+
+.window[data-window-type="alert"] .window-title-bar {
+    background: #ffd699;
+}
+
+/* Explorer windows - cool blue tint with monospace */
+.window[data-window-type="explorer"] {
+    background: #e8f0f2;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.window[data-window-type="explorer"] .window-title-bar {
+    background: #b8cfd6;
+    font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
+}
+
+.window[data-window-type="explorer"] .window-body {
+    font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
+}
+
+/* Drift animations for decorative windows */
+@keyframes gentleDrift {
+    0%, 100% {
+        transform: translate(0, 0) rotate(var(--initial-rotation, 0deg));
+    }
+    25% {
+        transform: translate(8px, -6px) rotate(calc(var(--initial-rotation, 0deg) + 0.5deg));
+    }
+    50% {
+        transform: translate(-4px, 8px) rotate(calc(var(--initial-rotation, 0deg) - 0.5deg));
+    }
+    75% {
+        transform: translate(6px, 4px) rotate(calc(var(--initial-rotation, 0deg) + 0.3deg));
+    }
+}
+
+@keyframes noticeableDrift {
+    0%, 100% {
+        transform: translate(0, 0) rotate(var(--initial-rotation, 0deg));
+    }
+    25% {
+        transform: translate(15px, -10px) rotate(calc(var(--initial-rotation, 0deg) + 1deg));
+    }
+    50% {
+        transform: translate(-8px, 12px) rotate(calc(var(--initial-rotation, 0deg) - 1deg));
+    }
+    75% {
+        transform: translate(12px, 8px) rotate(calc(var(--initial-rotation, 0deg) + 0.7deg));
+    }
+}
+
+/* Individual window drift variations */
+.window.media-player {
+    --initial-rotation: -2deg;
+    animation: gentleDrift 50s ease-in-out infinite;
+    animation-delay: 0s;
+}
+
+.window.search-window {
+    --initial-rotation: 2deg;
+    animation: gentleDrift 52s ease-in-out infinite;
+    animation-delay: -10s;
+}
+
+.window.error-dialog {
+    --initial-rotation: -3deg;
+    animation: gentleDrift 46s ease-in-out infinite;
+    animation-delay: -5s;
+}
+
+.window.recently-deleted-window {
+    --initial-rotation: 1.5deg;
+    animation: gentleDrift 45s ease-in-out infinite;
+    animation-delay: -15s;
+}
+
+/* Genie effect handled by Web Animations API in JavaScript */
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .window.media-player,
+    .window.search-window,
+    .window.error-dialog,
+    .window.recently-deleted-window {
+        animation: none;
+    }
 }
 
 /* Rotation modifier classes */
@@ -193,7 +317,6 @@ body {
     top: 30px;
     right: 60px;
     width: 220px;
-    transform: rotate(2deg);
 }
 
 .search-window .search-input-wrapper {
@@ -232,7 +355,6 @@ body {
     bottom: 80px;
     left: 40px;
     width: 260px;
-    transform: rotate(-3deg);
 }
 
 .error-dialog .error-message {
@@ -319,7 +441,6 @@ body {
     bottom: 120px;
     left: 70px;
     width: 360px;
-    transform: rotate(-1deg);
 }
 
 .notes-window .window-body {
@@ -481,6 +602,31 @@ body {
     }
 }
 
+/* Genie animation now handled by Web Animations API in JavaScript */
+
+.window-body.is-minimizing,
+.window-body.is-restoring {
+    overflow: hidden;
+    transition: max-height 0.25s cubic-bezier(0.4, 0.0, 0.2, 1),
+                padding 0.25s cubic-bezier(0.4, 0.0, 0.2, 1),
+                opacity 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.window-body.is-minimized {
+    max-height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    overflow: hidden;
+    opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .window-body.is-minimizing,
+    .window-body.is-restoring {
+        transition-duration: 0.01s;
+    }
+}
+
 /* Document Icon (decorative) */
 .document-icon {
     position: absolute;
@@ -586,8 +732,6 @@ body {
     top: 140px;
     right: 40px;
     width: 180px;
-    transform: rotate(-2deg);
-    z-index: -1;
 }
 
 .media-player .window-body {
@@ -781,7 +925,6 @@ body {
     bottom: 60px;
     right: 40px;
     width: 320px;
-    transform: rotate(1.5deg);
 }
 
 .deleted-log {
