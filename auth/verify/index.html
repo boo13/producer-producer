@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifying Magic Link - Producer-Producer</title>
+    <!-- Manual cache-busting: bump ?v=YYYYMMDD whenever CSS changes. -->
+    <link rel="stylesheet" href="../../css/styles.css?v=20260117">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+</head>
+
+<body>
+    <main class="desktop">
+        <!-- Auth Controls -->
+        <div class="auth-controls">
+            <span class="user-greeting is-hidden"></span>
+            <button class="settings-btn is-hidden">⚙️ Settings</button>
+            <button class="logout-btn is-hidden">Logout</button>
+        </div>
+
+        <!-- Animated Space Invader -->
+        <canvas id="space-invader" class="space-invader" width="96" height="96" aria-hidden="true"></canvas>
+
+        <!-- Loading Bar (decorative) -->
+        <div class="loading-bar is-visible" role="presentation">
+            <span class="loading-label">Verifying your login link...</span>
+            <div class="loading-track">
+                <div class="loading-fill"></div>
+            </div>
+        </div>
+
+        <!-- Speech Bubble (decorative) -->
+        <div class="speech-bubble" role="presentation">
+            <span class="speech-bubble-text">...</span>
+        </div>
+
+        <!-- Robot Illustration (decorative) -->
+        <div class="desktop-robot" role="presentation" aria-hidden="true">
+            <img src="../../images/robot-neutral-svgrepo-com.svg" alt="" loading="lazy">
+        </div>
+    </main>
+
+    <!-- Manual cache-busting: keep JS/CSS versions in sync -->
+    <script src="../../js/api.js?v=20260117"></script>
+    <script src="../../js/auth.js?v=20260117"></script>
+    <script src="../../js/opportunities.js?v=20260117"></script>
+    <script src="../../js/settings.js?v=20260117"></script>
+    <script src="../../js/space-invader.js?v=20260116"></script>
+    <script src="../../js/subscribe-form.js?v=20260116b"></script>
+</body>
+
+</html>
