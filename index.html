@@ -6,12 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Producer-Producer</title>
     <!-- Manual cache-busting: bump ?v=YYYYMMDD whenever CSS changes. -->
-    <link rel="stylesheet" href="css/styles.css?v=20260116b">
+    <link rel="stylesheet" href="css/styles.css?v=20260117">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 
 <body>
     <main class="desktop">
+        <!-- Auth Controls -->
+        <div class="auth-controls">
+            <span class="user-greeting is-hidden"></span>
+            <button class="settings-btn is-hidden">⚙️ Settings</button>
+            <button class="logout-btn is-hidden">Logout</button>
+        </div>
+
         <!-- Animated Space Invader -->
         <canvas id="space-invader" class="space-invader" width="96" height="96" aria-hidden="true"></canvas>
 
@@ -155,44 +162,99 @@
             <span class="speech-bubble-text">...</span>
         </div>
 
-        <!-- Notes Window -->
-        <div class="window notes-window" data-window-tier="functional" data-window-type="explorer" role="region" aria-label="Notes about featured listings" aria-expanded="true">
+        <!-- Login Window -->
+        <div class="window login-window" data-window-tier="functional" data-window-type="alert" role="dialog" aria-label="Login" aria-expanded="true">
             <div class="window-title-bar">
                 <div class="window-controls">
                     <span class="window-control close"></span>
                     <span class="window-control minimize"></span>
                     <span class="window-control maximize"></span>
                 </div>
-                <span class="window-title">Current top scorers 01.16.docx</span>
+                <span class="window-title">Login</span>
             </div>
             <div class="window-body">
-                <div class="note">
-                    <p class="note-title note-title--star">
-                        <img src="images/star-svgrepo-com.svg" alt="" class="note-star" aria-hidden="true">
-                        Supervising Producer, Politics Video Podcast
-                    </p>
-                    <p class="note-company">Vox Media</p>
-                    <p class="note-details">New York, NY · $120,000 – $140,000 · Dec 5, 2025</p>
-                    <p class="note-score">Score: <span>100.00</span></p>
+                <h2 class="login-title">Welcome to Producer-Producer</h2>
+                <p class="login-description">Enter your email to receive a magic link. No passwords needed.</p>
+                <form class="form-box" id="login-form">
+                    <div class="input-main">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-envelope" viewBox="0 0 16 16">
+                            <path
+                                d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z" />
+                        </svg>
+                        <input type="email" name="email" id="login-email" placeholder="Your Email" required>
+                    </div>
+                    <button class="submit" type="submit">Send Magic Link</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Settings Window -->
+        <div class="window settings-window is-hidden" data-window-tier="functional" data-window-type="application" role="dialog" aria-label="User Settings" aria-hidden="true" aria-expanded="true">
+            <div class="window-title-bar">
+                <div class="window-controls">
+                    <span class="window-control close"></span>
+                    <span class="window-control minimize"></span>
+                    <span class="window-control maximize"></span>
                 </div>
-                <div class="note">
-                    <p class="note-title">Director, Content Strategy</p>
-                    <p class="note-company">5024 Hulu, LLC</p>
-                    <p class="note-details">Santa Monica, CA · $188,400 – $252,600 · Dec 18, 2025</p>
-                    <p class="note-score">Score: <span>77.32</span></p>
+                <span class="window-title">Settings</span>
+            </div>
+            <div class="window-body">
+                <form class="settings-form" id="settings-form">
+                    <div class="settings-field">
+                        <label for="settings-locations">Target Locations</label>
+                        <input type="text" id="settings-locations" placeholder="e.g., New York, San Francisco, Remote">
+                        <span class="field-hint">Comma-separated list of cities or regions</span>
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="settings-min-salary">Minimum Salary ($)</label>
+                        <input type="number" id="settings-min-salary" placeholder="e.g., 100000" min="0" step="1000">
+                        <span class="field-hint">Filter out jobs below this salary threshold</span>
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="settings-include-keywords">Include Keywords</label>
+                        <input type="text" id="settings-include-keywords" placeholder="e.g., producer, director, content">
+                        <span class="field-hint">Job titles or terms to prioritize (comma-separated)</span>
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="settings-exclude-keywords">Exclude Keywords</label>
+                        <input type="text" id="settings-exclude-keywords" placeholder="e.g., intern, assistant">
+                        <span class="field-hint">Job titles or terms to filter out (comma-separated)</span>
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="settings-digest-threshold">Email Digest Threshold (Score)</label>
+                        <input type="number" id="settings-digest-threshold" placeholder="80" min="0" max="100" step="1">
+                        <span class="field-hint">Only send emails for jobs scoring above this threshold</span>
+                    </div>
+
+                    <div class="settings-field settings-field-checkbox">
+                        <input type="checkbox" id="settings-digest-enabled" checked>
+                        <label for="settings-digest-enabled">Enable daily email digest</label>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button type="submit" class="settings-btn-save">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Notes Window -->
+        <div class="window notes-window" data-window-tier="functional" data-window-type="explorer" role="region" aria-label="Your personalized opportunities" aria-expanded="true">
+            <div class="window-title-bar">
+                <div class="window-controls">
+                    <span class="window-control close"></span>
+                    <span class="window-control minimize"></span>
+                    <span class="window-control maximize"></span>
                 </div>
-                <div class="note">
-                    <p class="note-title">Director, MLB Operations - NBC Sports</p>
-                    <p class="note-company">NBCUniversal</p>
-                    <p class="note-details">Stamford, CT · N/A – N/A · Jan 6, 2026</p>
-                    <p class="note-score">Score: <span>69.95</span></p>
-                </div>
-                <div class="note">
-                    <p class="note-title">Director, Platform Operations &amp; Delivery</p>
-                    <p class="note-company">NBCUniversal</p>
-                    <p class="note-details">New York, NY · $210,000 – $210,000 · Jan 9, 2026</p>
-                    <p class="note-score">Score: <span>69.33</span></p>
-                </div>
+                <span class="window-title">Your Opportunities</span>
+            </div>
+            <div class="window-body">
+                <!-- Content dynamically loaded via opportunities.js -->
             </div>
         </div>
 
@@ -235,6 +297,10 @@
         </div>
     </main>
     <!-- Manual cache-busting: keep JS/CSS versions in sync -->
+    <script src="js/api.js?v=20260117"></script>
+    <script src="js/auth.js?v=20260117"></script>
+    <script src="js/opportunities.js?v=20260117"></script>
+    <script src="js/settings.js?v=20260117"></script>
     <script src="js/space-invader.js?v=20260116"></script>
     <script src="js/subscribe-form.js?v=20260116b"></script>
 </body>

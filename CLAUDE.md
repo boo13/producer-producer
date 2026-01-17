@@ -52,7 +52,12 @@ producer-producer/
 ├── css/
 │   └── styles.css         # All styling and animations
 ├── js/
-│   └── subscribe-form.js  # Form handling + window interactions
+│   ├── api.js             # API client (auth, opportunities, user config)
+│   ├── auth.js            # Authentication UI (login/logout)
+│   ├── opportunities.js   # Job listings display and actions
+│   ├── settings.js        # User settings modal
+│   ├── subscribe-form.js  # Form handling + window interactions
+│   └── space-invader.js   # Decorative animation
 ├── images/
 │   ├── robot-neutral-svgrepo-com.svg
 │   ├── star-svgrepo-com.svg
@@ -73,13 +78,61 @@ See `IMPLEMENTATION_01.16.md` for complete documentation of:
 - `js/subscribe-form.js` - Lines 69-352 (draggable windows + interactions)
 - `css/styles.css` - Lines 636-657 (minimize/restore transitions)
 
-## API
+## API Integration (Phase 4 - IMPLEMENTED)
 
-The public API exposes job listing data. Documentation to be added as endpoints are defined.
+The frontend now connects to the producer-producer-api backend at `api.producer-producer.com`.
 
-**Expected endpoint:** `GET /api/jobs?status=featured&limit=4`
+### Authentication
+- **Magic link login** - Passwordless authentication via email
+- **JWT tokens** - Stored in localStorage, auto-attached to API requests
+- **Session management** - Auto-logout on 401 responses
 
-See `PLAN_01.16.md` Phase 2 for backend integration plan.
+### Key Endpoints Used
+
+**Auth:**
+- `POST /auth/magic-link` - Request login email
+- `GET /auth/verify?token=xxx` - Verify magic link token
+- `GET /auth/me` - Get current user info
+
+**User Configuration:**
+- `GET /users/me/config` - Get user filter preferences
+- `PUT /users/me/config` - Update preferences
+
+**Opportunities:**
+- `GET /opportunities/for-me` - Get personalized opportunities
+- `PUT /users/me/opportunities/{id}` - Update opportunity status (todo/ignored/applied)
+
+### Features Implemented
+
+1. **Login Window** - Magic link authentication with email input
+2. **Settings Modal** - Configure locations, salary, keywords, email digest
+3. **Dynamic Job Listings** - Personalized opportunities loaded from API
+4. **Job Actions** - Save, ignore, or mark as applied
+5. **Auth State Management** - Show/hide UI elements based on login status
+
+### JavaScript Modules
+
+- **api.js** - Singleton API client with request handling, token management
+- **auth.js** - Login/logout UI, magic link verification, auth state updates
+- **opportunities.js** - Fetch and render job listings, handle job actions
+- **settings.js** - Settings modal with form population and saving
+
+### Local Development
+
+The API client automatically detects localhost and uses `http://localhost:8000` for local development. For production, it uses `https://api.producer-producer.com`.
+
+```bash
+# Run API locally (in producer-producer-api repo)
+docker compose up -d
+
+# Or run directly
+uvicorn fly_app.main:app --reload
+
+# Serve frontend (in producer-producer repo)
+python3 -m http.server 8080
+```
+
+Open `http://localhost:8080` and the frontend will connect to the local API.
 
 ## Deployment
 
@@ -96,6 +149,7 @@ See `PLAN_01.16.md` Phase 2 for backend integration plan.
 **When shipping CSS or JS updates:**
 1. Bump the `?v=YYYYMMDD` string in `index.html`
 2. Use format: `YYYYMMDD` for dates, append letter for same-day iterations (`a`, `b`, etc.)
+3. Current version: `20260117` (Phase 4 implementation)
 
 **TODO:** Replace with header-based cache control (see `PLAN_01.16.md` Phase 1.4)
 
@@ -111,6 +165,8 @@ Windows use a two-tier z-index system to maintain visual hierarchy:
 
 **Functional tier (100-999):**
 - Hero window (newsletter signup)
+- Login window (authentication)
+- Settings window (user configuration)
 - Notes window (job listings)
 
 Clicking a window brings it to the front within its tier. Functional windows always appear above decorative windows.
