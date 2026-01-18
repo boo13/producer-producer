@@ -31,10 +31,10 @@ async function verifyMagicLink(token) {
         // Update UI
         updateAuthUI();
 
-        // Refresh opportunities
-        if (typeof window.loadOpportunities === 'function') {
-            window.loadOpportunities();
-        }
+        // Redirect to home page after successful login
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 1500);
     } catch (err) {
         console.error('Magic link verification failed:', err);
         showErrorMessage(err.message || 'Login failed. Please try again.');
