@@ -593,6 +593,19 @@ body {
     animation: bubblePop 1.8s ease forwards;
 }
 
+.interweb-folder .folder-shape {
+    width: 64px;
+    height: 64px;
+    background: #050508 url('../images/interweb-search.png') center/cover no-repeat;
+    border-radius: var(--radius-md);
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.4);
+}
+
+.interweb-folder .folder-shape::before {
+    content: none;
+}
+
 @keyframes bubblePop {
     0% {
         opacity: 0;

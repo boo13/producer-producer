@@ -84,6 +84,7 @@ function updateAuthUI() {
 
     // Update login window visibility
     const loginWindow = document.querySelector('.login-window');
+    const newsletterWindow = document.querySelector('.hero-window');
     const logoutBtn = document.querySelector('.logout-btn');
     const userGreeting = document.querySelector('.user-greeting');
 
@@ -94,6 +95,16 @@ function updateAuthUI() {
         } else {
             loginWindow.classList.remove('is-hidden');
             loginWindow.setAttribute('aria-hidden', 'false');
+        }
+    }
+
+    if (newsletterWindow) {
+        if (isAuthenticated) {
+            newsletterWindow.classList.add('is-hidden');
+            newsletterWindow.setAttribute('aria-hidden', 'true');
+        } else {
+            newsletterWindow.classList.remove('is-hidden');
+            newsletterWindow.setAttribute('aria-hidden', 'false');
         }
     }
 
