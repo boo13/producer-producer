@@ -124,6 +124,13 @@ function updateAuthUI() {
             settingsBtn.classList.add('is-hidden');
         }
     }
+
+    document.dispatchEvent(new CustomEvent('pp:auth-changed', {
+        detail: {
+            isAuthenticated,
+            user,
+        },
+    }));
 }
 
 /**

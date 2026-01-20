@@ -52,6 +52,112 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
     }, 300);
 });
 
+// Desktop window manager helper so other modules can focus windows
+const desktopWindowManager = (() => {
+    const api = {
+        _bringToFrontImpl: null,
+        _zSeed: 100,
+        registerBringToFront(fn) {
+            this._bringToFrontImpl = fn;
+        },
+        findWindow(id) {
+            if (!id) {
+                return null;
+            }
+            const selector = `[data-window-id="${id}"]`;
+            return document.querySelector(selector) || document.getElementById(id) || document.querySelector(`.${id}`);
+        },
+        bringToFront(win) {
+            if (!win) {
+                return;
+            }
+
+            if (typeof this._bringToFrontImpl === 'function') {
+                this._bringToFrontImpl(win);
+                return;
+            }
+
+            this._zSeed += 1;
+            win.style.zIndex = String(this._zSeed);
+        },
+        setWindowVisibility(win, isVisible, options = {}) {
+            if (!win) {
+                return null;
+            }
+
+            const wasHidden = win.classList.contains('is-hidden');
+
+            if (isVisible) {
+                win.classList.remove('is-hidden');
+                win.setAttribute('aria-hidden', 'false');
+                win.setAttribute('aria-expanded', 'true');
+
+                if (options.anchorElement && wasHidden) {
+                    const anchorRect = options.anchorElement.getBoundingClientRect();
+                    const windowRect = win.getBoundingClientRect();
+                    const deltaX = anchorRect.left - windowRect.left;
+                    const deltaY = anchorRect.top - windowRect.top;
+
+                    win.animate([
+                        { opacity: 0, transform: `translate(${deltaX}px, ${deltaY}px) scale(0.3)` },
+                        { opacity: 1, transform: 'translate(0, 0) scale(1)' }
+                    ], {
+                        duration: 320,
+                        easing: 'cubic-bezier(0.34, 1, 0.64, 1)',
+                        fill: 'both'
+                    }).onfinish = () => {
+                        win.style.opacity = '';
+                        win.style.transform = '';
+                    };
+                }
+
+                this.bringToFront(win);
+                document.dispatchEvent(new CustomEvent('desktopWindow:opened', {
+                    detail: { id: win.dataset.windowId || win.id, element: win }
+                }));
+            } else {
+                win.classList.add('is-hidden');
+                win.setAttribute('aria-hidden', 'true');
+                win.setAttribute('aria-expanded', 'false');
+                document.dispatchEvent(new CustomEvent('desktopWindow:hidden', {
+                    detail: { id: win.dataset.windowId || win.id, element: win }
+                }));
+            }
+
+            return win;
+        },
+        openWindowById(id, options = {}) {
+            const win = this.findWindow(id);
+            if (!win) {
+                return null;
+            }
+
+            this.setWindowVisibility(win, true, options);
+            return win;
+        },
+        hideWindowById(id) {
+            const win = this.findWindow(id);
+            if (!win) {
+                return null;
+            }
+            this.setWindowVisibility(win, false);
+            return win;
+        },
+        toggleWindowById(id, anchorElement) {
+            const win = this.findWindow(id);
+            if (!win) {
+                return null;
+            }
+            const shouldShow = win.classList.contains('is-hidden');
+            return this.setWindowVisibility(win, shouldShow, { anchorElement });
+        }
+    };
+
+    return api;
+})();
+
+window.desktopWindowManager = desktopWindowManager;
+
 // Enable draggable faux windows on larger screens
 (function enableWindowDragging() {
     const MOBILE_BREAKPOINT = 768;
@@ -190,6 +296,8 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
             zIndexSeeds[tier] = Math.min(zIndexSeeds[tier] + 1, range.max);
             win.style.zIndex = String(zIndexSeeds[tier]);
         };
+
+        window.desktopWindowManager.registerBringToFront(bringToFront);
 
         const windowPointerDown = (win, titleBar) => (event) => {
             // Only handle if click is NOT on title bar (title bar has its own handler)
@@ -408,131 +516,37 @@ document.getElementById('subscribe-form').addEventListener('submit', function(e)
     }
 })();
 
-// Show playful bubble when folder icons are double-clicked
-(function initFolderIconBubbles() {
-    const icons = document.querySelectorAll('.folder-icon');
-    if (!icons.length) {
+// Wire folder + desktop icons so clicks open their windows
+(function initDesktopWindowLaunchers() {
+    const launchers = document.querySelectorAll('[data-opens]');
+    if (!launchers.length) {
         return;
     }
 
-    const BUBBLE_DURATION_MS = 1800;
-
-    icons.forEach((icon) => {
-        let bubble = icon.querySelector('.folder-bubble');
-        if (!bubble) {
-            bubble = document.createElement('div');
-            bubble.className = 'folder-bubble';
-            bubble.textContent = 'coming soon...';
-            icon.appendChild(bubble);
+    const activateLauncher = (launcher) => {
+        const targetId = launcher.getAttribute('data-opens');
+        if (!targetId) {
+            return;
         }
-
-        let hideTimeout = null;
-
-        icon.addEventListener('dblclick', () => {
-            if (hideTimeout) {
-                clearTimeout(hideTimeout);
-            }
-
-            bubble.classList.remove('is-visible');
-
-            // Force reflow so the animation can retrigger cleanly
-            void bubble.offsetWidth;
-
-            bubble.classList.add('is-visible');
-            hideTimeout = setTimeout(() => {
-                bubble.classList.remove('is-visible');
-                hideTimeout = null;
-            }, BUBBLE_DURATION_MS);
-        });
-    });
-})();
-
-// Toggle the Recently Deleted window when the trash icon is double-clicked
-(function initRecentlyDeletedWindow() {
-    const trashIcon = document.querySelector('.trash-icon');
-    const deletedWindow = document.querySelector('.recently-deleted-window');
-
-    if (!trashIcon || !deletedWindow) {
-        return;
-    }
-
-    const bringWindowToFront = () => {
-        const tier = deletedWindow.getAttribute('data-window-tier') || 'decorative';
-        const windows = document.querySelectorAll('.desktop .window');
-        let maxZ = tier === 'decorative' ? 1 : 100;
-        const tierMax = tier === 'decorative' ? 99 : 999;
-
-        windows.forEach((win) => {
-            const winTier = win.getAttribute('data-window-tier') || 'decorative';
-            if (winTier === tier) {
-                const zIndex = parseInt(window.getComputedStyle(win).zIndex || '0', 10);
-                if (!Number.isNaN(zIndex)) {
-                    maxZ = Math.max(maxZ, zIndex);
-                }
-            }
-        });
-
-        deletedWindow.style.zIndex = String(Math.min(maxZ + 1, tierMax));
+        window.desktopWindowManager.openWindowById(targetId, { anchorElement: launcher });
     };
 
-    const setWindowVisibility = (shouldShow) => {
-        deletedWindow.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
-
-        if (shouldShow) {
-            bringWindowToFront();
-
-            // Get positions of trash icon and window
-            const trashRect = trashIcon.getBoundingClientRect();
-            const windowRect = deletedWindow.getBoundingClientRect();
-
-            // Calculate the offset from window's final position to trash icon
-            const deltaX = trashRect.left - windowRect.left;
-            const deltaY = trashRect.top - windowRect.top;
-
-            // Remove is-hidden to make element visible
-            deletedWindow.classList.remove('is-hidden');
-
-            // Animate from trash icon position to final position using Web Animations API
-            const animation = deletedWindow.animate([
-                {
-                    opacity: 0,
-                    transform: `translate(${deltaX}px, ${deltaY}px) scale(0.2)`,
-                    offset: 0
-                },
-                {
-                    opacity: 1,
-                    transform: 'translate(0, 0) scale(1)',
-                    offset: 1
-                }
-            ], {
-                duration: 400,
-                easing: 'cubic-bezier(0.34, 1, 0.64, 1)',
-                fill: 'forwards'
-            });
-
-            // Clean up after animation completes
-            animation.onfinish = () => {
-                deletedWindow.style.transform = '';
-                deletedWindow.style.opacity = '';
-            };
-        } else {
-            deletedWindow.classList.add('is-hidden');
-        }
-    };
-
-    const toggleWindow = () => {
-        const isHidden = deletedWindow.classList.contains('is-hidden');
-        setWindowVisibility(isHidden);
-    };
-
-    trashIcon.addEventListener('dblclick', () => {
-        toggleWindow();
-    });
-
-    trashIcon.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
+    launchers.forEach((launcher) => {
+        launcher.addEventListener('click', (event) => {
             event.preventDefault();
-            toggleWindow();
-        }
+            activateLauncher(launcher);
+        });
+
+        launcher.addEventListener('dblclick', (event) => {
+            event.preventDefault();
+            activateLauncher(launcher);
+        });
+
+        launcher.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                activateLauncher(launcher);
+            }
+        });
     });
 })();

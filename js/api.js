@@ -215,7 +215,11 @@ class APIClient {
     async getUserOpportunities(params = {}) {
         const queryParams = new URLSearchParams();
 
-        if (params.status) queryParams.append('status', params.status);
+        if (params.status_filter) {
+            queryParams.append('status_filter', params.status_filter);
+        } else if (params.status) {
+            queryParams.append('status_filter', params.status);
+        }
         if (params.limit) queryParams.append('limit', params.limit);
         if (params.offset) queryParams.append('offset', params.offset);
 
@@ -230,10 +234,13 @@ class APIClient {
     /**
      * Opportunities: Update opportunity status
      */
-    async updateOpportunityStatus(opportunityId, status, score = null) {
+    async updateOpportunityStatus(opportunityId, status, options = {}) {
         const body = { status };
-        if (score !== null) {
-            body.score = score;
+        if (options.score !== undefined && options.score !== null) {
+            body.score = options.score;
+        }
+        if (options.ignore_reason !== undefined) {
+            body.ignore_reason = options.ignore_reason;
         }
 
         return await this.request(`/users/me/opportunities/${opportunityId}`, {
