@@ -60,10 +60,10 @@ body {
 
 .space-invader {
     position: absolute;
-    top: var(--spacing-md);
-    left: 180px;
-    width: 96px;
-    height: 96px;
+    bottom: 70px;
+    right: 120px;
+    width: 70px;
+    height: 80px;
     image-rendering: pixelated;
     pointer-events: none;
 }
@@ -735,22 +735,7 @@ body {
     text-align: center;
 }
 
-/* Robot Illustration */
-.desktop-robot {
-    position: absolute;
-    bottom: 10px;
-    right: 20px;
-    width: 180px;
-    max-width: 30vw;
-    transform: rotate(2deg);
-    pointer-events: none;
-}
 
-.desktop-robot img {
-    width: 100%;
-    height: auto;
-    display: block;
-}
 
 /* Media Player (decorative) */
 .media-player {

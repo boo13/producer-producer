@@ -534,6 +534,10 @@ window.desktopWindowManager = desktopWindowManager;
     launchers.forEach((launcher) => {
         launcher.addEventListener('click', (event) => {
             event.preventDefault();
+            // Special case: Interweb Search requires double-click
+            if (launcher.getAttribute('data-opens') === 'search-window') {
+                return;
+            }
             activateLauncher(launcher);
         });
 
