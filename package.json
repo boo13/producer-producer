@@ -1,0 +1,18 @@
+{
+  "name": "producer-producer",
+  "version": "1.0.0",
+  "description": "## Job opportunities from: - Amazon - Bloomberg Media - Business Insider - Conde Nast - Headspace - Masterclass - NBCUniversal - Netflix - NowThis - NPR - NY Times - The Wirecutter - Versant - Vimeo - Vox Media - Yahoo",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0"
+  }
+}

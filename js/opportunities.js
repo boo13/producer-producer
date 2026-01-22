@@ -49,11 +49,13 @@ async function loadOpportunities() {
     try {
         window.authFunctions.showLoadingState('Loading opportunities...');
         const opportunities = await window.api.getOpportunitiesForMe({
-            min_score: 50,
-            limit: 20,
+            min_score: 0,
+            limit: 10,
         });
 
-        opportunitiesState.all = [...opportunities].sort((a, b) => (b.score || 0) - (a.score || 0));
+        opportunitiesState.all = [...opportunities].sort(
+            (a, b) => (b.score || 0) - (a.score || 0),
+        );
         opportunitiesState.actionHistory = [];
         opportunitiesState.companyFilter = null;
         window.companiesWindow?.setOpportunities(opportunitiesState.all);
@@ -70,7 +72,11 @@ const getVisibleOpportunities = () => {
     if (!opportunitiesState.companyFilter) {
         return opportunitiesState.all;
     }
-    return opportunitiesState.all.filter((opp) => (opp.company_name || 'Unknown Company') === opportunitiesState.companyFilter);
+    return opportunitiesState.all.filter(
+        (opp) =>
+            (opp.company_name || 'Unknown Company') ===
+            opportunitiesState.companyFilter,
+    );
 };
 
 function renderOpportunities() {
@@ -84,11 +90,13 @@ function renderOpportunities() {
         const filterBanner = document.createElement('div');
         filterBanner.className = 'company-filter-banner';
         filterBanner.innerHTML = `Filtering by <strong>${escapeHtml(opportunitiesState.companyFilter)}</strong> <button type="button" class="clear-company-filter">Clear filter</button>`;
-        filterBanner.querySelector('.clear-company-filter').addEventListener('click', () => {
-            opportunitiesState.companyFilter = null;
-            window.companiesWindow?.clearSelection?.();
-            scheduleRender();
-        });
+        filterBanner
+            .querySelector('.clear-company-filter')
+            .addEventListener('click', () => {
+                opportunitiesState.companyFilter = null;
+                window.companiesWindow?.clearSelection?.();
+                scheduleRender();
+            });
         notesWindow.appendChild(filterBanner);
     }
 
@@ -101,7 +109,10 @@ function renderOpportunities() {
             ? `<p class="note-title">No opportunities for ${escapeHtml(opportunitiesState.companyFilter)}.</p><p class="note-details">Try clearing the company filter.</p>`
             : `<p class="note-title">No opportunities found</p><p class="note-details">You swiped through everything! Check back later for fresh leads.</p>`;
         notesWindow.appendChild(empty);
-        if (!opportunitiesState.companyFilter && opportunitiesState.all.length === 0) {
+        if (
+            !opportunitiesState.companyFilter &&
+            opportunitiesState.all.length === 0
+        ) {
             window.AudioManager?.play('fanfare');
             confetti({ particleCount: 120, spread: 60 });
         }
@@ -159,7 +170,11 @@ function createOpportunityElement(opp, isTopScore = false) {
             event.preventDefault();
             const action = btn.getAttribute('data-action');
             const direction = action === 'ignored' ? 'left' : 'right';
-            if (action !== 'ignored' && action !== 'todo' && action !== 'applied') {
+            if (
+                action !== 'ignored' &&
+                action !== 'todo' &&
+                action !== 'applied'
+            ) {
                 return;
             }
             window.SwipeManager?.forceDecision(card, direction);
@@ -171,7 +186,7 @@ function createOpportunityElement(opp, isTopScore = false) {
         onDecision: (direction) => {
             const action = direction === 'right' ? 'todo' : 'ignored';
             handleOpportunityAction(opp, action);
-        }
+        },
     });
 
     return card;
@@ -183,7 +198,9 @@ function setActiveCard(opportunityId) {
     }
 
     if (opportunitiesState.cardsById.has(opportunitiesState.activeCardId)) {
-        const previous = opportunitiesState.cardsById.get(opportunitiesState.activeCardId);
+        const previous = opportunitiesState.cardsById.get(
+            opportunitiesState.activeCardId,
+        );
         previous?.classList.remove('is-active');
     }
 
@@ -202,10 +219,16 @@ async function handleOpportunityAction(opportunity, status) {
     try {
         await window.api.updateOpportunityStatus(opportunity.id, status);
 
-        const index = opportunitiesState.all.findIndex((item) => item.id === opportunity.id);
+        const index = opportunitiesState.all.findIndex(
+            (item) => item.id === opportunity.id,
+        );
         if (index > -1) {
             const removed = opportunitiesState.all.splice(index, 1)[0];
-            opportunitiesState.actionHistory.push({ opportunity: cloneOpportunity(removed), index, status });
+            opportunitiesState.actionHistory.push({
+                opportunity: cloneOpportunity(removed),
+                index,
+                status,
+            });
         }
 
         if (status === 'ignored') {
@@ -227,7 +250,9 @@ async function handleOpportunityAction(opportunity, status) {
         scheduleRender(flyOffDelay);
     } catch (err) {
         console.error('Failed to update opportunity:', err);
-        window.authFunctions.showErrorMessage('Failed to update. Please try again.');
+        window.authFunctions.showErrorMessage(
+            'Failed to update. Please try again.',
+        );
         scheduleRender(flyOffDelay);
     }
 }
@@ -249,7 +274,7 @@ function addStatusRow(status, opportunity) {
     const actionText = {
         ignored: 'ignored',
         todo: 'saved',
-        applied: 'marked applied'
+        applied: 'marked applied',
     };
     textSpan.textContent = `${opportunity.title} @ ${opportunity.company_name || 'Unknown Company'} ${actionText[status] || ''}.`;
 
@@ -264,7 +289,9 @@ function addStatusRow(status, opportunity) {
             button.className = 'reason-btn';
             button.dataset.reason = reason;
             button.textContent = reason;
-            button.addEventListener('click', () => submitIgnoreReason(opportunity.id, reason, row, button));
+            button.addEventListener('click', () =>
+                submitIgnoreReason(opportunity.id, reason, row, button),
+            );
             actions.appendChild(button);
         });
 
@@ -335,7 +362,9 @@ async function submitIgnoreReason(opportunityId, reason, row, sourceBtn) {
     window.AudioManager?.play('bloop');
 
     try {
-        await window.api.updateOpportunityStatus(opportunityId, 'ignored', { ignore_reason: reason });
+        await window.api.updateOpportunityStatus(opportunityId, 'ignored', {
+            ignore_reason: reason,
+        });
     } catch (err) {
         console.error('Failed to save ignore reason:', err);
     }
@@ -348,26 +377,37 @@ async function undoLastAction() {
         return;
     }
 
-    opportunitiesState.all.splice(lastAction.index ?? 0, 0, lastAction.opportunity);
+    opportunitiesState.all.splice(
+        lastAction.index ?? 0,
+        0,
+        lastAction.opportunity,
+    );
     window.companiesWindow?.setOpportunities(opportunitiesState.all);
     window.applicationsWindow?.notifyStatusChange('todo');
     window.AudioManager?.play('pop');
     triggerHaptic();
 
     try {
-        await window.api.updateOpportunityStatus(lastAction.opportunity.id, 'todo');
+        await window.api.updateOpportunityStatus(
+            lastAction.opportunity.id,
+            'todo',
+        );
     } catch (err) {
         console.error('Failed to revert status:', err);
     }
 
-    const row = statusFeed?.querySelector(`[data-opportunity-id="${lastAction.opportunity.id}"]`);
+    const row = statusFeed?.querySelector(
+        `[data-opportunity-id="${lastAction.opportunity.id}"]`,
+    );
     row?.remove();
     scheduleRender();
 }
 
 function applyQuickReason(index) {
     if (!statusFeed) return;
-    const row = statusFeed.querySelector('.status-row--ignored:not(.reason-set)');
+    const row = statusFeed.querySelector(
+        '.status-row--ignored:not(.reason-set)',
+    );
     if (!row) return;
     const buttons = row.querySelectorAll('.reason-btn[data-reason]');
     const button = buttons[index];
@@ -376,7 +416,9 @@ function applyQuickReason(index) {
 
 function triggerOtherReason() {
     if (!statusFeed) return;
-    const row = statusFeed.querySelector('.status-row--ignored:not(.reason-set)');
+    const row = statusFeed.querySelector(
+        '.status-row--ignored:not(.reason-set)',
+    );
     if (!row) return;
     const otherBtn = row.querySelector('.reason-btn--other');
     otherBtn?.click();
@@ -385,11 +427,17 @@ function triggerOtherReason() {
 
 function registerKeyboardShortcuts() {
     document.addEventListener('keydown', (event) => {
-        if (event.target && ['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
+        if (
+            event.target &&
+            ['INPUT', 'TEXTAREA'].includes(event.target.tagName)
+        ) {
             return;
         }
 
-        const activeOpportunity = opportunitiesState.all.find((opp) => opp.id === opportunitiesState.activeCardId) || opportunitiesState.all[0];
+        const activeOpportunity =
+            opportunitiesState.all.find(
+                (opp) => opp.id === opportunitiesState.activeCardId,
+            ) || opportunitiesState.all[0];
         if (!activeOpportunity) {
             return;
         }
@@ -413,7 +461,10 @@ function registerKeyboardShortcuts() {
         } else if (event.key === '3') {
             event.preventDefault();
             triggerOtherReason();
-        } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        } else if (
+            (event.ctrlKey || event.metaKey) &&
+            event.key.toLowerCase() === 'z'
+        ) {
             event.preventDefault();
             undoLastAction();
         }
@@ -432,9 +483,7 @@ function formatSalary(min, max) {
 
     const formatAmount = (amount) => {
         if (!amount) return null;
-        return amount >= 1000
-            ? `$${Math.round(amount / 1000)}k`
-            : `$${amount}`;
+        return amount >= 1000 ? `$${Math.round(amount / 1000)}k` : `$${amount}`;
     };
 
     const minStr = formatAmount(min);
