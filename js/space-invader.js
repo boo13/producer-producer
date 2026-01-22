@@ -68,4 +68,12 @@
         currentFrame = (currentFrame + 1) % frames.length;
         drawFrame(frames[currentFrame]);
     }, 600);
+
+    // Toggle media player on double click
+    canvas.addEventListener('dblclick', () => {
+        const mediaPlayer = document.querySelector('.media-player');
+        if (mediaPlayer) {
+            mediaPlayer.classList.toggle('is-hidden');
+        }
+    });
 })();

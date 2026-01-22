@@ -49,8 +49,8 @@ async function loadOpportunities() {
     try {
         window.authFunctions.showLoadingState('Loading opportunities...');
         const opportunities = await window.api.getOpportunitiesForMe({
-            min_score: 0,
-            limit: 10,
+            min_score: 50,
+            limit: 20,
         });
 
         opportunitiesState.all = [...opportunities].sort(

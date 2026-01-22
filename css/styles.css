@@ -65,7 +65,7 @@ body {
     width: 70px;
     height: 80px;
     image-rendering: pixelated;
-    pointer-events: none;
+    pointer-events: auto;
 }
 
 .window {
@@ -245,6 +245,9 @@ body {
 }
 
 .hero-window {
+    position: absolute;
+    left: 100px;
+    top: 100px;
     width: 400px;
     max-width: 100%;
     text-align: center;
@@ -451,8 +454,8 @@ body {
 /* Notes Window */
 .notes-window {
     position: absolute;
-    bottom: 120px;
-    left: 70px;
+    left: calc(50% - 180px);
+    top: calc(50% - 250px);
     width: 360px;
 }
 
@@ -1371,8 +1374,9 @@ body {
 .login-window {
     position: absolute;
     top: 150px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: auto;
+    right: 100px;
+    transform: none;
     width: 400px;
     max-width: 90%;
 }

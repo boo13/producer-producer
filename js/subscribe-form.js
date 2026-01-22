@@ -422,8 +422,9 @@ window.desktopWindowManager = desktopWindowManager;
             titleBarListeners.push({ element: win, handler: windowClickHandler });
 
             // Initialize state
+            const isInitiallyMinimized = win.getAttribute('aria-expanded') === 'false';
             windowStates.set(win, {
-                isMinimized: false,
+                isMinimized: isInitiallyMinimized,
                 normalBodyHeight: null
             });
 
