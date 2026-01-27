@@ -38,22 +38,46 @@ const scheduleRender = (delay = 0) => {
 };
 
 /**
+ * Update the Opportunities window title based on auth state.
+ */
+function updateOpportunitiesWindowTitle() {
+    const titleEl = document.querySelector('.notes-window .window-title');
+    if (!titleEl) return;
+
+    titleEl.textContent = window.api?.isAuthenticated?.()
+        ? 'Your Opportunities'
+        : 'Opportunities';
+}
+
+/**
  * Load opportunities from API
  */
 async function loadOpportunities() {
-    if (!window.api.isAuthenticated()) {
-        showPlaceholderOpportunities();
-        return;
-    }
-
     try {
         window.authFunctions.showLoadingState('Loading opportunities...');
-        const opportunities = await window.api.getOpportunitiesForMe({
+
+        // Always load the public ranked feed so logged-out visitors can use the site.
+        let opportunities = await window.api.getOpportunityFeed({
             min_score: 50,
-            limit: 20,
+            limit: 50,
         });
 
-        opportunitiesState.all = [...opportunities].sort(
+        // If logged in, hide ignored/applied opportunities.
+        if (window.api.isAuthenticated()) {
+            const [ignored, applied] = await Promise.all([
+                window.api.getUserOpportunities({ status_filter: 'ignored', limit: 200 }),
+                window.api.getUserOpportunities({ status_filter: 'applied', limit: 200 }),
+            ]);
+
+            const hiddenIds = new Set([
+                ...(ignored || []).map((uo) => uo.opportunity_id),
+                ...(applied || []).map((uo) => uo.opportunity_id),
+            ]);
+
+            opportunities = (opportunities || []).filter((opp) => !hiddenIds.has(opp.id));
+        }
+
+        opportunitiesState.all = [...(opportunities || [])].sort(
             (a, b) => (b.score || 0) - (a.score || 0),
         );
         opportunitiesState.actionHistory = [];
@@ -140,7 +164,7 @@ function createOpportunityElement(opp, isTopScore = false) {
 
     const salary = formatSalary(opp.salary_min, opp.salary_max);
     const location = formatLocation(opp);
-    const date = formatDate(opp.posted_date || opp.created_at);
+    const date = formatDate(opp.posted_date || opp.created_at || opp.first_seen);
 
     card.innerHTML = `
         <div class="swipe-overlay swipe-overlay-left" aria-hidden="true">IGNORE</div>
@@ -158,36 +182,50 @@ function createOpportunityElement(opp, isTopScore = false) {
             <button class="note-action-btn note-action-btn--todo" data-action="todo">Save</button>
             <button class="note-action-btn note-action-btn--ignore" data-action="ignored">Ignore</button>
             <button class="note-action-btn note-action-btn--applied" data-action="applied">Applied</button>
-            ${opp.apply_url ? `<a href="${escapeHtml(opp.apply_url)}" target="_blank" class="note-action-btn note-action-btn--link">Apply ↗</a>` : ''}
+            ${(opp.apply_url || opp.url) ? `<a href="${escapeHtml(opp.apply_url || opp.url)}" target="_blank" class="note-action-btn note-action-btn--link">Apply ↗</a>` : ''}
         </div>
     `;
 
     card.addEventListener('focusin', () => setActiveCard(opp.id));
     card.addEventListener('swipe:activate', () => setActiveCard(opp.id));
 
-    card.querySelectorAll('.note-action-btn[data-action]').forEach((btn) => {
-        btn.addEventListener('click', (event) => {
-            event.preventDefault();
-            const action = btn.getAttribute('data-action');
-            const direction = action === 'ignored' ? 'left' : 'right';
-            if (
-                action !== 'ignored' &&
-                action !== 'todo' &&
-                action !== 'applied'
-            ) {
-                return;
-            }
-            window.SwipeManager?.forceDecision(card, direction);
-            handleOpportunityAction(opp, action);
-        });
-    });
+    const requiresAuthButtons = card.querySelectorAll('.note-action-btn[data-action]');
 
-    window.SwipeManager?.registerCard(card, {
-        onDecision: (direction) => {
-            const action = direction === 'right' ? 'todo' : 'ignored';
-            handleOpportunityAction(opp, action);
-        },
-    });
+    if (!window.api?.isAuthenticated?.()) {
+        requiresAuthButtons.forEach((btn) => {
+            btn.setAttribute('disabled', 'true');
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+                window.authFunctions?.showErrorMessage(
+                    'Log in to save, ignore, or track applications.',
+                );
+            });
+        });
+    } else {
+        requiresAuthButtons.forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+                const action = btn.getAttribute('data-action');
+                const direction = action === 'ignored' ? 'left' : 'right';
+                if (
+                    action !== 'ignored' &&
+                    action !== 'todo' &&
+                    action !== 'applied'
+                ) {
+                    return;
+                }
+                window.SwipeManager?.forceDecision(card, direction);
+                handleOpportunityAction(opp, action);
+            });
+        });
+
+        window.SwipeManager?.registerCard(card, {
+            onDecision: (direction) => {
+                const action = direction === 'right' ? 'todo' : 'ignored';
+                handleOpportunityAction(opp, action);
+            },
+        });
+    }
 
     return card;
 }
@@ -213,6 +251,11 @@ function setActiveCard(opportunityId) {
 
 async function handleOpportunityAction(opportunity, status) {
     if (!opportunity) return;
+
+    if (!window.api.isAuthenticated()) {
+        window.authFunctions?.showErrorMessage('Log in to save, ignore, or track applications.');
+        return;
+    }
 
     const flyOffDelay = window.SwipeManager?.config?.flyOffDuration || 0;
 
@@ -444,11 +487,23 @@ function registerKeyboardShortcuts() {
 
         if (event.key === 'ArrowLeft') {
             event.preventDefault();
+            if (!window.api?.isAuthenticated?.()) {
+                window.authFunctions?.showErrorMessage(
+                    'Log in to save, ignore, or track applications.',
+                );
+                return;
+            }
             const card = opportunitiesState.cardsById.get(activeOpportunity.id);
             window.SwipeManager?.forceDecision(card, 'left');
             handleOpportunityAction(activeOpportunity, 'ignored');
         } else if (event.key === 'ArrowRight') {
             event.preventDefault();
+            if (!window.api?.isAuthenticated?.()) {
+                window.authFunctions?.showErrorMessage(
+                    'Log in to save, ignore, or track applications.',
+                );
+                return;
+            }
             const card = opportunitiesState.cardsById.get(activeOpportunity.id);
             window.SwipeManager?.forceDecision(card, 'right');
             handleOpportunityAction(activeOpportunity, 'todo');
@@ -498,8 +553,8 @@ function formatSalary(min, max) {
 function formatLocation(opp) {
     const parts = [];
 
-    if (opp.location_city) parts.push(opp.location_city);
-    if (opp.location_state) parts.push(opp.location_state);
+    if (opp.location_city || opp.city) parts.push(opp.location_city || opp.city);
+    if (opp.location_state || opp.state) parts.push(opp.location_state || opp.state);
 
     if (parts.length === 0) {
         return opp.location_raw || 'Location not specified';
@@ -550,6 +605,12 @@ function showPlaceholderOpportunities() {
 registerKeyboardShortcuts();
 
 document.addEventListener('DOMContentLoaded', () => {
+    updateOpportunitiesWindowTitle();
+    loadOpportunities();
+});
+
+document.addEventListener('pp:auth-changed', () => {
+    updateOpportunitiesWindowTitle();
     loadOpportunities();
 });
 

@@ -50,6 +50,11 @@ async function openSettings() {
         // Populate form
         populateSettingsForm(config);
 
+        // Grey out options for now (reduce user customizability)
+        disableSettingsForm(settingsWindow, {
+            message: 'Settings are coming soon. (Viewing only for now.)',
+        });
+
         // Show window
         settingsWindow.classList.remove('is-hidden');
         settingsWindow.setAttribute('aria-hidden', 'false');
@@ -120,6 +125,12 @@ function populateSettingsForm(config) {
  * Save settings
  */
 async function saveSettings() {
+    const settingsWindow = document.querySelector('.settings-window');
+    if (settingsWindow?.dataset?.settingsDisabled === 'true') {
+        window.authFunctions?.showErrorMessage('Settings are view-only for now.');
+        return;
+    }
+
     try {
         window.authFunctions.showLoadingState('Saving settings...');
 
@@ -151,6 +162,39 @@ async function saveSettings() {
     } finally {
         window.authFunctions.hideLoadingState();
     }
+}
+
+/**
+ * Disable settings form controls (view-only mode).
+ */
+function disableSettingsForm(settingsWindow, options = {}) {
+    if (!settingsWindow) return;
+
+    settingsWindow.dataset.settingsDisabled = 'true';
+
+    const { message } = options;
+    if (message) {
+        let note = settingsWindow.querySelector('.settings-disabled-note');
+        if (!note) {
+            note = document.createElement('p');
+            note.className = 'settings-disabled-note';
+            const body = settingsWindow.querySelector('.window-body');
+            const form = settingsWindow.querySelector('form');
+            if (body) {
+                body.insertBefore(note, form || body.firstChild);
+            }
+        }
+        note.textContent = message;
+    }
+
+    settingsWindow
+        .querySelectorAll('input, textarea, select, button[type="submit"]')
+        .forEach((el) => {
+            // Keep the close button working.
+            if (el.classList?.contains('window-control')) return;
+            // Allow scrolling/copying, but prevent edits.
+            el.setAttribute('disabled', 'true');
+        });
 }
 
 /**

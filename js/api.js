@@ -3,9 +3,16 @@
  * Handles authentication, token management, and API communication
  */
 
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000'
-    : 'https://api.producer-producer.com';
+// NOTE: `api.producer-producer.com` is currently behind a Cloudflare challenge,
+// which blocks browser fetch() from local dev servers.
+// Using the Fly.io origin directly for now.
+const PROD_API_BASE_URL = 'https://producer-producer-api.fly.dev';
+const LOCAL_API_BASE_URL = 'http://localhost:8000';
+
+// Default to production even during local frontend dev.
+// To use a local API, run the site with `?api=local`.
+const apiParam = new URLSearchParams(window.location.search).get('api');
+const API_BASE_URL = apiParam === 'local' ? LOCAL_API_BASE_URL : PROD_API_BASE_URL;
 
 const TOKEN_KEY = 'pp_auth_token';
 const USER_KEY = 'pp_user_data';
@@ -187,6 +194,27 @@ class APIClient {
         return await this.request('/users/me/config', {
             method: 'PUT',
             body: JSON.stringify(config),
+        });
+    }
+
+    /**
+     * Opportunities: Get public ranked feed (no auth required)
+     */
+    async getOpportunityFeed(params = {}) {
+        const queryParams = new URLSearchParams();
+
+        if (params.min_score !== undefined && params.min_score !== null) {
+            queryParams.append('min_score', params.min_score);
+        }
+        if (params.limit) queryParams.append('limit', params.limit);
+        if (params.offset) queryParams.append('offset', params.offset);
+        if (params.company_id) queryParams.append('company_id', params.company_id);
+
+        const queryString = queryParams.toString();
+        const endpoint = `/opportunities/feed${queryString ? '?' + queryString : ''}`;
+
+        return await this.request(endpoint, {
+            method: 'GET',
         });
     }
 
