@@ -396,6 +396,11 @@ window.desktopWindowManager = desktopWindowManager;
                     return;
                 }
 
+                // Don't start drag if clicking on window control buttons
+                if (event.target.closest('.window-control')) {
+                    return;
+                }
+
                 event.preventDefault();
 
                 activeWindow = win;
@@ -425,7 +430,14 @@ window.desktopWindowManager = desktopWindowManager;
             const isInitiallyMinimized = win.getAttribute('aria-expanded') === 'false';
             windowStates.set(win, {
                 isMinimized: isInitiallyMinimized,
-                normalBodyHeight: null
+                normalBodyHeight: null,
+                isMaximized: false,
+                originalLeft: null,
+                originalTop: null,
+                originalWidth: null,
+                originalHeight: null,
+                originalTransform: null,
+                originalAnimation: null
             });
 
             // Double-click detection
@@ -433,6 +445,11 @@ window.desktopWindowManager = desktopWindowManager;
             let clickTimer = null;
 
             const handleTitleBarClick = (event) => {
+                // Don't trigger double-click minimize when clicking on window controls
+                if (event.target.closest('.window-control')) {
+                    return;
+                }
+
                 clickCount++;
 
                 if (clickCount === 1) {
@@ -458,6 +475,60 @@ window.desktopWindowManager = desktopWindowManager;
                 };
                 minimizeBtn.addEventListener('click', handleMinimizeClick);
                 titleBarListeners.push({ element: minimizeBtn, handler: handleMinimizeClick, type: 'click' });
+            }
+
+            // Close button click handler
+            const closeBtn = win.querySelector('.window-control.close');
+            if (closeBtn) {
+                const handleCloseClick = (event) => {
+                    event.stopPropagation();
+                    win.classList.add('is-hidden');
+                    win.setAttribute('aria-hidden', 'true');
+                };
+                closeBtn.addEventListener('click', handleCloseClick);
+                titleBarListeners.push({ element: closeBtn, handler: handleCloseClick, type: 'click' });
+            }
+
+            // Maximize button click handler (only for functional windows)
+            const maximizeBtn = win.querySelector('.window-control.maximize');
+            const isDecorativeWindow = win.getAttribute('data-window-tier') === 'decorative';
+            if (maximizeBtn && !isDecorativeWindow) {
+                const handleMaximizeClick = (event) => {
+                    event.stopPropagation();
+                    const state = windowStates.get(win);
+                    if (!state) return;
+
+                    if (state.isMaximized) {
+                        // Restore to original size
+                        win.style.left = state.originalLeft;
+                        win.style.top = state.originalTop;
+                        win.style.width = state.originalWidth;
+                        win.style.height = state.originalHeight;
+                        win.style.transform = state.originalTransform;
+                        win.style.animation = state.originalAnimation;
+                        state.isMaximized = false;
+                    } else {
+                        // Store original dimensions and transform
+                        state.originalLeft = win.style.left;
+                        state.originalTop = win.style.top;
+                        state.originalWidth = win.style.width || win.offsetWidth + 'px';
+                        state.originalHeight = win.style.height || '';
+                        state.originalTransform = win.style.transform || '';
+                        state.originalAnimation = win.style.animation || '';
+
+                        // Maximize to fill desktop, reset rotation
+                        win.style.left = '0px';
+                        win.style.top = '0px';
+                        win.style.width = desktop.clientWidth + 'px';
+                        win.style.height = desktop.clientHeight + 'px';
+                        win.style.transform = 'none';
+                        win.style.animation = 'none';
+                        state.isMaximized = true;
+                    }
+                    bringToFront(win);
+                };
+                maximizeBtn.addEventListener('click', handleMaximizeClick);
+                titleBarListeners.push({ element: maximizeBtn, handler: handleMaximizeClick, type: 'click' });
             }
         });
 

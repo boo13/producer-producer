@@ -111,14 +111,43 @@ body {
 .window-control.close {
     background: var(--accent);
     border-color: #c0392b;
+    cursor: pointer;
+}
+
+.window-control.close:hover {
+    background: #c0392b;
 }
 
 .window-control.minimize {
+    background: #f1c40f;
+    border-color: #d4a90a;
     cursor: pointer;
 }
 
 .window-control.minimize:hover {
-    background: #e0dcd0;
+    background: #d4a90a;
+}
+
+.window-control.maximize {
+    background: #2ecc71;
+    border-color: #27ae60;
+    cursor: pointer;
+}
+
+.window-control.maximize:hover {
+    background: #27ae60;
+}
+
+/* Disable maximize on decorative windows */
+.window[data-window-tier="decorative"] .window-control.maximize {
+    background: var(--window-bg);
+    border-color: var(--window-border);
+    cursor: default;
+    opacity: 0.5;
+}
+
+.window[data-window-tier="decorative"] .window-control.maximize:hover {
+    background: var(--window-bg);
 }
 
 .window-body {
