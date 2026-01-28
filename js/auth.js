@@ -126,15 +126,15 @@ function updateAuthUI() {
         }
     }
 
-    // Show/hide settings button
-    const settingsBtn = document.querySelector('.settings-btn');
-    if (settingsBtn) {
+    // Show/hide settings buttons (desktop + mobile shortcut)
+    const settingsBtns = document.querySelectorAll('.settings-btn, .mobile-settings-btn');
+    settingsBtns.forEach((settingsBtn) => {
         if (isAuthenticated) {
             settingsBtn.classList.remove('is-hidden');
         } else {
             settingsBtn.classList.add('is-hidden');
         }
-    }
+    });
 
     document.dispatchEvent(new CustomEvent('pp:auth-changed', {
         detail: {

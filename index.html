@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Producer-Producer</title>
     <!-- Manual cache-busting: bump ?v=YYYYMMDD whenever CSS changes. -->
-    <link rel="stylesheet" href="css/styles.css?v=20260127">
+    <link rel="stylesheet" href="css/styles.css?v=20260127b">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 
@@ -18,6 +18,13 @@
             <button class="settings-btn is-hidden">⚙️ Settings</button>
             <button class="logout-btn is-hidden">Logout</button>
         </div>
+
+        <!-- Mobile shortcuts (shown on small screens) -->
+        <nav class="mobile-shortcuts" aria-label="Shortcuts">
+            <button type="button" class="mobile-shortcut" data-opens="applications-window">applications</button>
+            <button type="button" class="mobile-shortcut" data-opens="notes-window">opportunities</button>
+            <button type="button" class="mobile-shortcut mobile-settings-btn is-hidden" data-opens="settings-window">settings</button>
+        </nav>
 
         <!-- Animated Space Invader -->
         <canvas id="space-invader" class="space-invader" width="96" height="96" aria-hidden="true"></canvas>
@@ -386,7 +393,7 @@
     <script src="js/opportunities.js?v=20260127"></script>
     <script src="js/settings.js?v=20260117c"></script>
     <script src="js/space-invader.js?v=20260116"></script>
-    <script src="js/subscribe-form.js?v=20260127"></script>
+    <script src="js/subscribe-form.js?v=20260127b"></script>
 </body>
 
 </html>

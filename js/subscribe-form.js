@@ -626,3 +626,161 @@ window.desktopWindowManager = desktopWindowManager;
         });
     });
 })();
+
+// Mobile: allow double-tap/click title bars to minimize windows (no dragging)
+(function enableMobileTitleBarMinimize() {
+    const MOBILE_BREAKPOINT = 768;
+    const mobileQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
+
+    let teardown = null;
+
+    const toggleMinimize = (win) => {
+        if (!win) return;
+        const body = win.querySelector('.window-body');
+        if (!body) return;
+
+        const isMinimized = body.classList.contains('is-minimized');
+        const computed = window.getComputedStyle(body);
+
+        if (isMinimized) {
+            // Restore
+            body.classList.remove('is-minimized');
+            body.classList.add('is-restoring');
+
+            const paddingTop = body.dataset.ppPaddingTop || computed.paddingTop;
+            const paddingBottom = body.dataset.ppPaddingBottom || computed.paddingBottom;
+
+            body.style.maxHeight = '0px';
+            body.style.paddingTop = '0px';
+            body.style.paddingBottom = '0px';
+            body.style.opacity = '0';
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    body.style.maxHeight = body.scrollHeight + 'px';
+                    body.style.paddingTop = paddingTop;
+                    body.style.paddingBottom = paddingBottom;
+                    body.style.opacity = '1';
+                });
+            });
+
+            const cleanup = (e) => {
+                if (e.propertyName === 'max-height') {
+                    body.classList.remove('is-restoring');
+                    body.style.maxHeight = '';
+                    body.style.paddingTop = '';
+                    body.style.paddingBottom = '';
+                    body.style.opacity = '';
+                    body.removeEventListener('transitionend', cleanup);
+                }
+            };
+            body.addEventListener('transitionend', cleanup);
+            win.setAttribute('aria-expanded', 'true');
+        } else {
+            // Minimize
+            body.dataset.ppPaddingTop = computed.paddingTop;
+            body.dataset.ppPaddingBottom = computed.paddingBottom;
+
+            body.style.maxHeight = body.scrollHeight + 'px';
+            body.style.paddingTop = computed.paddingTop;
+            body.style.paddingBottom = computed.paddingBottom;
+            body.style.opacity = '1';
+            body.classList.add('is-minimizing');
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    body.style.maxHeight = '0px';
+                    body.style.paddingTop = '0px';
+                    body.style.paddingBottom = '0px';
+                    body.style.opacity = '0';
+                });
+            });
+
+            const cleanup = (e) => {
+                if (e.propertyName === 'max-height') {
+                    body.classList.remove('is-minimizing');
+                    body.classList.add('is-minimized');
+                    body.removeEventListener('transitionend', cleanup);
+                }
+            };
+            body.addEventListener('transitionend', cleanup);
+            win.setAttribute('aria-expanded', 'false');
+        }
+    };
+
+    const init = () => {
+        if (teardown || !mobileQuery.matches) return;
+
+        const windows = Array.from(document.querySelectorAll('.desktop .window'));
+        const listeners = [];
+
+        windows.forEach((win) => {
+            const titleBar = win.querySelector('.window-title-bar');
+            if (!titleBar) return;
+
+            // Double-click-ish logic (works with touch/click)
+            let clickCount = 0;
+            let clickTimer = null;
+
+            const handleTitleBarClick = (event) => {
+                if (event.target.closest('.window-control')) {
+                    return;
+                }
+
+                clickCount++;
+                if (clickCount === 1) {
+                    clickTimer = window.setTimeout(() => {
+                        clickCount = 0;
+                    }, 300);
+                } else if (clickCount === 2) {
+                    window.clearTimeout(clickTimer);
+                    clickCount = 0;
+                    toggleMinimize(win);
+                }
+            };
+
+            titleBar.addEventListener('click', handleTitleBarClick);
+            listeners.push({ el: titleBar, type: 'click', fn: handleTitleBarClick });
+
+            // Keep the minimize button working too
+            const minimizeBtn = win.querySelector('.window-control.minimize');
+            if (minimizeBtn) {
+                const handleMinimizeClick = (event) => {
+                    event.stopPropagation();
+                    toggleMinimize(win);
+                };
+                minimizeBtn.addEventListener('click', handleMinimizeClick);
+                listeners.push({ el: minimizeBtn, type: 'click', fn: handleMinimizeClick });
+            }
+        });
+
+        teardown = () => {
+            listeners.forEach(({ el, type, fn }) => el.removeEventListener(type, fn));
+            teardown = null;
+        };
+    };
+
+    const destroy = () => {
+        if (teardown) {
+            const fn = teardown;
+            teardown = null;
+            fn();
+        }
+    };
+
+    const handleBreakpointChange = (event) => {
+        if (event.matches) {
+            init();
+        } else {
+            destroy();
+        }
+    };
+
+    init();
+
+    if (typeof mobileQuery.addEventListener === 'function') {
+        mobileQuery.addEventListener('change', handleBreakpointChange);
+    } else if (typeof mobileQuery.addListener === 'function') {
+        mobileQuery.addListener(handleBreakpointChange);
+    }
+})();

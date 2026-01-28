@@ -6,14 +6,16 @@
  * Initialize settings modal
  */
 function initSettingsModal() {
-    const settingsBtn = document.querySelector('.settings-btn');
+    const settingsBtns = document.querySelectorAll('.settings-btn, .mobile-settings-btn');
     const settingsWindow = document.querySelector('.settings-window');
 
-    if (!settingsBtn || !settingsWindow) return;
+    if (!settingsBtns.length || !settingsWindow) return;
 
     // Open settings
-    settingsBtn.addEventListener('click', () => {
-        openSettings();
+    settingsBtns.forEach((settingsBtn) => {
+        settingsBtn.addEventListener('click', () => {
+            openSettings();
+        });
     });
 
     // Close button

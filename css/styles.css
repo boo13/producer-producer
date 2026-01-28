@@ -1329,6 +1329,11 @@ body {
     visibility: hidden;
 }
 
+/* Mobile shortcuts hidden by default (desktop) */
+.mobile-shortcuts {
+    display: none;
+}
+
 /* Mobile layout - hide decorative elements, center hero */
 @media only screen and (max-width: 768px) {
 
@@ -1346,12 +1351,43 @@ body {
         display: none;
     }
 
+    /* Mobile shortcuts bar (apps/opps/settings) */
+    .mobile-shortcuts {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+        max-width: 400px;
+        position: sticky;
+        top: 0;
+        z-index: 1200; /* Above all windows */
+        padding: 10px 0 14px;
+        background: rgba(242, 235, 220, 0.92);
+        backdrop-filter: blur(6px);
+    }
+
+    .mobile-shortcut {
+        flex: 1;
+        border: 2px solid var(--ink);
+        border-radius: 10px;
+        background: white;
+        color: var(--ink);
+        font-family: inherit;
+        font-size: 0.85rem;
+        padding: 10px 8px;
+        text-transform: lowercase;
+        cursor: pointer;
+    }
+
+    .mobile-shortcut:active {
+        transform: translateY(1px);
+    }
+
     /* Desktop wrapper: vertical stack with centered hero */
     .desktop {
         flex-direction: column;
         align-items: center;
         padding: var(--spacing-md);
-        padding-top: var(--spacing-lg);
+        padding-top: var(--spacing-md);
         height: auto;
     }
 
