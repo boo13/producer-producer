@@ -51,14 +51,66 @@ body {
 }
 
 /* ==========================================================================
+   App Header (Navigation)
+   ========================================================================== */
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #1a1a1a;
+    border-bottom: 1px solid #333;
+    height: 60px;
+}
+
+.app-header__logo {
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    color: #00ff00;
+    margin: 0;
+    font-weight: normal;
+}
+
+.app-header__nav {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.app-header__tab {
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #888;
+    background: transparent;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    min-height: 44px;
+    cursor: pointer;
+    transition: color 100ms ease, border-color 100ms ease, background 100ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.app-header__tab:hover {
+    color: #ccc;
+    border-color: #777;
+}
+
+.app-header__tab--active {
+    color: #00ff00;
+    border-color: #00ff00;
+    background: rgba(0, 255, 0, 0.1);
+}
+
+/* ==========================================================================
    Card Stack Component
    ========================================================================== */
 
 .card-stack {
     position: relative;
     width: 100%;
-    height: calc(100vh - 140px); /* Leave room for action buttons at bottom */
-    height: calc(100dvh - 140px);
+    height: calc(100vh - 200px); /* Leave room for header (60px) + action buttons (140px) */
+    height: calc(100dvh - 200px);
     overflow: hidden;
     padding: 1rem;
 }
@@ -351,8 +403,8 @@ body {
 
 .app-list {
     width: 100%;
-    height: calc(100vh - 140px);
-    height: calc(100dvh - 140px);
+    height: calc(100vh - 200px); /* Leave room for header (60px) + bottom padding (140px) */
+    height: calc(100dvh - 200px);
     overflow-y: auto;
     padding: 1rem;
     -webkit-overflow-scrolling: touch;

@@ -280,6 +280,48 @@
     }
 
     // ==========================================================================
+    // Navigation
+    // ==========================================================================
+
+    /**
+     * Update active tab styling
+     * @param {string} activeView - 'swipe' or 'applications'
+     */
+    function updateActiveTab(activeView) {
+        const tabs = document.querySelectorAll('.app-header__tab');
+        tabs.forEach((tab) => {
+            if (tab.dataset.view === activeView) {
+                tab.classList.add('app-header__tab--active');
+            } else {
+                tab.classList.remove('app-header__tab--active');
+            }
+        });
+    }
+
+    /**
+     * Initialize navigation tab handlers
+     */
+    function initNavigation() {
+        const tabs = document.querySelectorAll('.app-header__tab');
+
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => {
+                const view = tab.dataset.view;
+
+                if (view === 'applications') {
+                    show();
+                    updateActiveTab('applications');
+                } else if (view === 'swipe') {
+                    hide();
+                    updateActiveTab('swipe');
+                }
+            });
+        });
+
+        console.log('[ApplicationsV2] Navigation initialized');
+    }
+
+    // ==========================================================================
     // Initialization
     // ==========================================================================
 
@@ -293,6 +335,9 @@
             console.warn('[ApplicationsV2] Applications list element not found, waiting for DOM...');
             return;
         }
+
+        // Initialize navigation
+        initNavigation();
 
         console.log('[ApplicationsV2] Initialized');
     }
