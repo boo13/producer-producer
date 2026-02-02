@@ -125,6 +125,12 @@
         // Clear existing cards
         cardStackEl.innerHTML = '';
 
+        // Remove existing action buttons
+        const existingActions = document.querySelector('.action-buttons');
+        if (existingActions) {
+            existingActions.remove();
+        }
+
         // Show empty state if no opportunities
         if (state.opportunities.length === 0 || state.currentIndex >= state.opportunities.length) {
             const emptyState = document.createElement('div');
@@ -140,6 +146,8 @@
 
         // Render top 3 cards for smooth transitions
         const cardsToRender = Math.min(3, state.opportunities.length - state.currentIndex);
+        let topCard = null;
+        let topOpportunity = null;
 
         for (let i = 0; i < cardsToRender; i++) {
             const opportunityIndex = state.currentIndex + i;
@@ -149,17 +157,67 @@
             const card = createCardElement(opportunity, stackPosition);
             cardStackEl.appendChild(card);
 
-            // Register top card with SwipeManager if authenticated
-            if (stackPosition === 1 && window.SwipeManager) {
-                window.SwipeManager.registerCard(card, {
-                    onDecision: (direction) => {
-                        handleSwipeDecision(opportunity, direction);
-                    },
+            // Register top card with SwipeManager
+            if (stackPosition === 1) {
+                topCard = card;
+                topOpportunity = opportunity;
+
+                if (window.SwipeManager) {
+                    window.SwipeManager.registerCard(card, {
+                        onDecision: (direction) => {
+                            handleSwipeDecision(opportunity, direction);
+                        },
+                    });
+                }
+
+                // Listen for swipe:complete to handle post-animation cleanup
+                card.addEventListener('swipe:complete', () => {
+                    handleSwipeComplete(card);
                 });
             }
         }
 
+        // Add action buttons below the card stack
+        if (topCard && topOpportunity) {
+            renderActionButtons(topCard);
+        }
+
         console.log(`[OpportunitiesV2] Rendered ${cardsToRender} cards, index: ${state.currentIndex}/${state.opportunities.length}`);
+    }
+
+    /**
+     * Render action buttons (X and checkmark) for manual swiping
+     * @param {HTMLElement} topCard - The top card to control
+     */
+    function renderActionButtons(topCard) {
+        const actionsContainer = document.createElement('div');
+        actionsContainer.className = 'action-buttons';
+        actionsContainer.innerHTML = `
+            <button class="action-button action-button--nope" type="button" aria-label="Skip this job">
+                <span aria-hidden="true">✕</span>
+            </button>
+            <button class="action-button action-button--save" type="button" aria-label="Save this job">
+                <span aria-hidden="true">✓</span>
+            </button>
+        `;
+
+        // Wire up buttons to force swipe
+        const nopeBtn = actionsContainer.querySelector('.action-button--nope');
+        const saveBtn = actionsContainer.querySelector('.action-button--save');
+
+        nopeBtn.addEventListener('click', () => {
+            if (window.SwipeManager) {
+                window.SwipeManager.forceDecision(topCard, 'left');
+            }
+        });
+
+        saveBtn.addEventListener('click', () => {
+            if (window.SwipeManager) {
+                window.SwipeManager.forceDecision(topCard, 'right');
+            }
+        });
+
+        document.getElementById('app').appendChild(actionsContainer);
     }
 
     // ==========================================================================
@@ -173,6 +231,7 @@
      */
     async function handleSwipeDecision(opportunity, direction) {
         const status = direction === 'right' ? 'todo' : 'ignored';
+        const actionLabel = direction === 'right' ? 'Saved' : 'Ignored';
 
         // Save to action history for undo
         state.actionHistory.push({
@@ -184,18 +243,83 @@
         // Move to next card
         state.currentIndex++;
 
+        // Trigger haptic feedback
+        triggerHaptic();
+
         // Update API if authenticated
         if (window.api?.isAuthenticated?.()) {
             try {
                 await window.api.updateOpportunityStatus(opportunity.id, status);
-                console.log(`[OpportunitiesV2] Opportunity ${opportunity.id} marked as ${status}`);
+                console.log(`[OpportunitiesV2] ${actionLabel}: ${opportunity.title}`);
             } catch (err) {
                 console.error('[OpportunitiesV2] Failed to update opportunity status:', err);
             }
+        } else {
+            console.log(`[OpportunitiesV2] ${actionLabel}: ${opportunity.title} (not logged in - local only)`);
         }
 
-        // Re-render cards
+        // Show undo toast
+        showUndoToast(actionLabel, opportunity.title);
+    }
+
+    /**
+     * Handle swipe completion (after fly-off animation)
+     * @param {HTMLElement} card - The card that completed
+     */
+    function handleSwipeComplete(card) {
+        // Unregister the card from SwipeManager
+        if (window.SwipeManager) {
+            window.SwipeManager.unregisterCard(card);
+        }
+
+        // Re-render the stack with updated cards
         renderCards();
+    }
+
+    /**
+     * Trigger haptic feedback if available
+     */
+    function triggerHaptic() {
+        if (navigator.vibrate) {
+            navigator.vibrate(10);
+        }
+    }
+
+    /**
+     * Show undo toast after swipe action
+     * @param {string} action - 'Saved' or 'Ignored'
+     * @param {string} title - Job title
+     */
+    function showUndoToast(action, title) {
+        // Remove existing toast if any
+        const existingToast = document.querySelector('.undo-toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'undo-toast';
+        toast.innerHTML = `
+            <span class="undo-toast__text">${action}: ${title.substring(0, 30)}${title.length > 30 ? '...' : ''}</span>
+            <button class="undo-toast__btn" type="button">Undo</button>
+        `;
+
+        document.getElementById('app').appendChild(toast);
+
+        // Wire up undo button
+        const undoBtn = toast.querySelector('.undo-toast__btn');
+        undoBtn.addEventListener('click', () => {
+            undoLastAction();
+            toast.remove();
+        });
+
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.classList.add('undo-toast--fade');
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 5000);
     }
 
     // ==========================================================================
@@ -307,6 +431,32 @@
     document.addEventListener('pp:auth-changed', () => {
         console.log('[OpportunitiesV2] Auth state changed, reloading opportunities');
         loadOpportunities();
+    });
+
+    // Keyboard shortcuts for desktop testing
+    document.addEventListener('keydown', (e) => {
+        // Get top card
+        const topCard = document.querySelector('.job-card[data-stack-position="1"]');
+        if (!topCard) return;
+
+        // Arrow keys for swipe
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            if (window.SwipeManager) {
+                window.SwipeManager.forceDecision(topCard, 'left');
+            }
+        } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            if (window.SwipeManager) {
+                window.SwipeManager.forceDecision(topCard, 'right');
+            }
+        }
+
+        // Cmd/Ctrl+Z for undo
+        if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+            e.preventDefault();
+            undoLastAction();
+        }
     });
 
     // Initialize on DOMContentLoaded

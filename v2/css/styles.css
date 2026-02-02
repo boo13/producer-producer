@@ -57,9 +57,10 @@ body {
 .card-stack {
     position: relative;
     width: 100%;
-    height: calc(100vh - 120px); /* Leave room for nav/actions */
-    height: calc(100dvh - 120px);
+    height: calc(100vh - 140px); /* Leave room for action buttons at bottom */
+    height: calc(100dvh - 140px);
     overflow: hidden;
+    padding: 1rem;
 }
 
 /* ==========================================================================
@@ -215,4 +216,130 @@ body {
     color: #888;
     margin: 0;
     line-height: 1.4;
+}
+
+/* ==========================================================================
+   Action Buttons (X and checkmark)
+   ========================================================================== */
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    padding: 1rem;
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    background: linear-gradient(transparent, #1a1a1a 30%);
+    padding-bottom: 2rem;
+    z-index: 100;
+}
+
+.action-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: 50%;
+    border: 2px solid;
+    background: #1a1a1a;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: transform 100ms ease, background 100ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.action-button:active {
+    transform: scale(0.95);
+}
+
+.action-button--nope {
+    border-color: #ff4444;
+    color: #ff4444;
+}
+
+.action-button--nope:hover {
+    background: rgba(255, 68, 68, 0.15);
+}
+
+.action-button--save {
+    border-color: #00ff00;
+    color: #00ff00;
+}
+
+.action-button--save:hover {
+    background: rgba(0, 255, 0, 0.15);
+}
+
+/* ==========================================================================
+   Undo Toast
+   ========================================================================== */
+
+.undo-toast {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    z-index: 200;
+    animation: toast-slide-up 200ms ease-out;
+}
+
+@keyframes toast-slide-up {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.undo-toast--fade {
+    opacity: 0;
+    transition: opacity 300ms ease-out;
+}
+
+.undo-toast__text {
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.undo-toast__btn {
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #00ff00;
+    background: transparent;
+    border: 1px solid #00ff00;
+    border-radius: 4px;
+    padding: 0.25rem 0.75rem;
+    cursor: pointer;
+    transition: background 100ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.undo-toast__btn:hover {
+    background: rgba(0, 255, 0, 0.15);
+}
+
+.undo-toast__btn:active {
+    background: rgba(0, 255, 0, 0.25);
 }
