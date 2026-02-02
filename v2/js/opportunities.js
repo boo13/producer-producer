@@ -366,13 +366,17 @@
             renderCards();
         } catch (err) {
             console.error('[OpportunitiesV2] Failed to load opportunities:', err);
+            console.error('[OpportunitiesV2] API URL:', window.api?.baseUrl);
 
-            // Show error in card stack
+            // Show error in card stack with more details
             if (cardStackEl) {
+                const isCorsError = err.message.includes('fetch') || err.message.includes('Network');
                 cardStackEl.innerHTML = `
                     <div class="empty-state">
                         <h2 class="empty-state__title">Failed to load</h2>
-                        <p class="empty-state__message">Could not load opportunities. Please try again later.</p>
+                        <p class="empty-state__message">${isCorsError
+                            ? 'Network error - check browser console for CORS issues.'
+                            : err.message || 'Could not load opportunities. Please try again later.'}</p>
                     </div>
                 `;
             }
