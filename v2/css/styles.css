@@ -1,0 +1,51 @@
+/**
+ * Producer Producer v2 - Mobile-First Styles
+ * Terminal aesthetic with VT323 typography
+ */
+
+/* Reset and base styles */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: 'VT323', monospace;
+    background: #1a1a1a;
+    color: #00ff00;
+    min-height: 100vh;
+    min-height: 100dvh;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Main app container - mobile-first max-width */
+#app {
+    width: 100%;
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    position: relative;
+}
+
+/* Prevent pull-to-refresh on mobile */
+html,
+body {
+    overscroll-behavior: none;
+}
+
+/* Selection color */
+::selection {
+    background: #00ff00;
+    color: #1a1a1a;
+}
