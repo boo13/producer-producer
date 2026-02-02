@@ -49,3 +49,170 @@ body {
     background: #00ff00;
     color: #1a1a1a;
 }
+
+/* ==========================================================================
+   Card Stack Component
+   ========================================================================== */
+
+.card-stack {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 120px); /* Leave room for nav/actions */
+    height: calc(100dvh - 120px);
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   Job Card Component
+   ========================================================================== */
+
+.job-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #252525;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1.5rem;
+    touch-action: pan-y;
+    user-select: none;
+    will-change: transform;
+    transition: transform 180ms ease-out, opacity 180ms ease-out;
+}
+
+/* Stacked cards depth effect */
+.job-card[data-stack-position="1"] {
+    z-index: 3;
+}
+
+.job-card[data-stack-position="2"] {
+    z-index: 2;
+    transform: scale(0.95) translateY(8px);
+    opacity: 0.7;
+}
+
+.job-card[data-stack-position="3"] {
+    z-index: 1;
+    transform: scale(0.9) translateY(16px);
+    opacity: 0.5;
+}
+
+/* No transition while actively swiping */
+.job-card.is-swipe-active {
+    transition: none;
+}
+
+/* Job card header area */
+.job-card__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Job title */
+.job-card__title {
+    font-family: 'VT323', monospace;
+    font-size: 1.75rem;
+    line-height: 1.2;
+    color: #00ff00;
+    margin: 0;
+}
+
+/* Company name */
+.job-card__company {
+    font-family: 'VT323', monospace;
+    font-size: 1.25rem;
+    color: #ccc;
+    margin: 0;
+}
+
+/* Meta info: location, salary, date */
+.job-card__meta {
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #888;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Score badge (optional) */
+.job-card__score {
+    display: inline-block;
+    font-family: 'VT323', monospace;
+    font-size: 0.875rem;
+    color: #00ff00;
+    background: rgba(0, 255, 0, 0.1);
+    border: 1px solid #00ff00;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* ==========================================================================
+   Swipe Overlays
+   ========================================================================== */
+
+.swipe-overlay-left,
+.swipe-overlay-right {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'VT323', monospace;
+    font-size: 3rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0;
+    pointer-events: none;
+    border-radius: 8px;
+    z-index: 10;
+}
+
+.swipe-overlay-left {
+    background: rgba(255, 0, 0, 0.2);
+    color: #ff4444;
+    border: 3px solid #ff4444;
+}
+
+.swipe-overlay-right {
+    background: rgba(0, 255, 0, 0.2);
+    color: #00ff00;
+    border: 3px solid #00ff00;
+}
+
+/* ==========================================================================
+   Empty State
+   ========================================================================== */
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 2rem;
+}
+
+.empty-state__title {
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    color: #00ff00;
+    margin: 0 0 1rem;
+}
+
+.empty-state__message {
+    font-family: 'VT323', monospace;
+    font-size: 1.125rem;
+    color: #888;
+    margin: 0;
+    line-height: 1.4;
+}
