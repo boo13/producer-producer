@@ -344,3 +344,131 @@ body {
 .undo-toast__btn:active {
     background: rgba(0, 255, 0, 0.25);
 }
+
+/* ==========================================================================
+   Applications List Component
+   ========================================================================== */
+
+.app-list {
+    width: 100%;
+    height: calc(100vh - 140px);
+    height: calc(100dvh - 140px);
+    overflow-y: auto;
+    padding: 1rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.app-list__item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #252525;
+    border-bottom: 1px solid #333;
+}
+
+.app-list__item:first-child {
+    border-radius: 8px 8px 0 0;
+}
+
+.app-list__item:last-child {
+    border-bottom: none;
+    border-radius: 0 0 8px 8px;
+}
+
+.app-list__item:only-child {
+    border-radius: 8px;
+}
+
+.app-list__info {
+    flex: 1;
+    min-width: 0; /* Allow text truncation */
+}
+
+.app-list__title {
+    font-family: 'VT323', monospace;
+    font-size: 1.25rem;
+    color: #00ff00;
+    margin: 0 0 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-list__company {
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #ccc;
+    margin: 0 0 0.25rem;
+}
+
+.app-list__meta {
+    font-family: 'VT323', monospace;
+    font-size: 0.875rem;
+    color: #888;
+    margin: 0;
+}
+
+.app-list__actions {
+    flex-shrink: 0;
+}
+
+.app-list__btn {
+    font-family: 'VT323', monospace;
+    font-size: 0.875rem;
+    color: #00ff00;
+    background: transparent;
+    border: 1px solid #00ff00;
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    min-height: 44px;
+    cursor: pointer;
+    transition: background 100ms ease, opacity 100ms ease;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+}
+
+.app-list__btn:hover {
+    background: rgba(0, 255, 0, 0.15);
+}
+
+.app-list__btn:active {
+    background: rgba(0, 255, 0, 0.25);
+}
+
+.app-list__btn--applied {
+    color: #888;
+    border-color: #555;
+    cursor: default;
+    pointer-events: none;
+}
+
+.app-list__btn--applied::before {
+    content: '\2713 '; /* Checkmark */
+}
+
+.app-list__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 2rem;
+}
+
+.app-list__empty-title {
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    color: #00ff00;
+    margin: 0 0 1rem;
+}
+
+.app-list__empty-message {
+    font-family: 'VT323', monospace;
+    font-size: 1.125rem;
+    color: #888;
+    margin: 0;
+    line-height: 1.4;
+}
