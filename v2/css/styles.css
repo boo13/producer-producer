@@ -330,7 +330,8 @@ body {
     background: transparent;
     border: 1px solid #00ff00;
     border-radius: 4px;
-    padding: 0.25rem 0.75rem;
+    padding: 0.5rem 1rem;
+    min-height: 44px;
     cursor: pointer;
     transition: background 100ms ease;
     -webkit-tap-highlight-color: transparent;

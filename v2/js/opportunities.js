@@ -393,18 +393,29 @@
             return;
         }
 
+        // Remove any visible undo toast
+        const existingToast = document.querySelector('.undo-toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+
         // Restore the opportunity at its previous position
         state.currentIndex = Math.max(0, state.currentIndex - 1);
+
+        console.log(`[OpportunitiesV2] Undo: restored "${lastAction.opportunity.title}"`);
 
         // Revert API status if authenticated
         if (window.api?.isAuthenticated?.()) {
             try {
                 await window.api.updateOpportunityStatus(lastAction.opportunity.id, 'todo');
-                console.log(`[OpportunitiesV2] Reverted opportunity ${lastAction.opportunity.id} to todo`);
+                console.log(`[OpportunitiesV2] API status reverted to todo`);
             } catch (err) {
                 console.error('[OpportunitiesV2] Failed to revert status:', err);
             }
         }
+
+        // Trigger haptic feedback for undo
+        triggerHaptic();
 
         renderCards();
     }
