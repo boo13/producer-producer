@@ -109,8 +109,8 @@
                 <p class="job-card__company">${escapeHtml(opportunity.company_name || 'Unknown Company')}</p>
             </div>
             <div class="job-card__meta-container">
-                <p class="job-card__meta job-card__meta--location">${escapeHtml(location)}</p>
                 <p class="job-card__meta job-card__meta--salary">${escapeHtml(salary)}</p>
+                <p class="job-card__meta job-card__meta--location">${escapeHtml(location)}</p>
                 <p class="job-card__meta job-card__meta--date">${escapeHtml(date)}</p>
             </div>
         `;

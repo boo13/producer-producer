@@ -142,12 +142,14 @@ html, body {
 }
 
 .app-header__logo {
-    font-family: 'Space Mono', monospace;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--accent-green);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: #fff;
     margin: 0;
-    letter-spacing: -0.02em;
+    line-height: 1.1;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .app-header__nav {
@@ -222,12 +224,12 @@ html, body {
     position: relative;
     flex: 1;
     width: 100%;
-    /* Allow cards to overflow for score badge and swipe animations */
+    /* Allow cards to overflow for swipe animations */
     overflow: visible;
     padding: var(--space-md);
     padding-top: var(--space-sm);
-    /* Leave room for action buttons */
-    padding-bottom: 100px;
+    /* Leave room for fixed action buttons bar */
+    padding-bottom: 120px;
 }
 
 /* ==========================================================================
@@ -364,14 +366,22 @@ html, body {
     flex-shrink: 0;
 }
 
-/* Location gets special treatment */
-.job-card__meta--location::before {
-    background: var(--accent-blue);
+/* Salary - most prominent meta item */
+.job-card__meta--salary {
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: var(--ink);
 }
 
-/* Salary gets special treatment */
 .job-card__meta--salary::before {
     background: var(--accent-gold);
+    width: 10px;
+    height: 10px;
+}
+
+/* Location */
+.job-card__meta--location::before {
+    background: var(--accent-blue);
 }
 
 /* Date more subtle */
@@ -393,19 +403,19 @@ html, body {
 
 .job-card__score {
     position: absolute;
-    top: -12px;
+    bottom: var(--space-md);
     right: var(--space-md);
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    min-width: 64px;
-    height: 64px;
+    min-width: 56px;
+    height: 56px;
     padding: 0 var(--space-sm);
 
     font-family: 'Space Mono', monospace;
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
 
     border-radius: var(--radius-md);
@@ -435,10 +445,10 @@ html, body {
 }
 
 @keyframes score-celebrate {
-    0% { transform: rotate(3deg) scale(0); }
+    0% { transform: rotate(3deg) scale(0.5); opacity: 0; }
     50% { transform: rotate(3deg) scale(1.1); }
     70% { transform: rotate(3deg) scale(0.95); }
-    100% { transform: rotate(3deg) scale(1); }
+    100% { transform: rotate(3deg) scale(1); opacity: 1; }
 }
 
 /* Pulse on hover for high scores */
@@ -554,18 +564,23 @@ html, body {
    ========================================================================== */
 
 .action-buttons {
-    display: flex;
-    justify-content: center;
-    gap: var(--space-xl);
-    padding: var(--space-lg);
     position: fixed;
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
     max-width: 430px;
-    background: linear-gradient(to top, var(--bg-dark) 60%, transparent);
-    padding-bottom: var(--space-xl);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-lg);
+
+    padding: var(--space-lg) var(--space-xl);
+    padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+
+    background: var(--bg-dark);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     z-index: 100;
 }
 
@@ -573,19 +588,16 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 72px;
-    height: 72px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     border: 3px solid;
-    background: rgba(255, 255, 255, 0.1);
-    font-size: 2rem;
+    background: transparent;
+    font-size: 1.75rem;
     cursor: pointer;
 
     transition: all var(--transition-fast);
     -webkit-tap-highlight-color: transparent;
-
-    /* Subtle inner glow */
-    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.05);
 }
 
 .action-button:active {
@@ -598,11 +610,9 @@ html, body {
 }
 
 .action-button--nope:hover {
-    background: rgba(255, 118, 117, 0.2);
-    box-shadow:
-        inset 0 0 20px rgba(255, 255, 255, 0.05),
-        0 0 30px var(--accent-red-glow);
-    transform: scale(1.05);
+    background: rgba(255, 118, 117, 0.15);
+    box-shadow: 0 0 20px var(--accent-red-glow);
+    transform: scale(1.08);
 }
 
 .action-button--save {
@@ -611,11 +621,9 @@ html, body {
 }
 
 .action-button--save:hover {
-    background: rgba(0, 184, 148, 0.2);
-    box-shadow:
-        inset 0 0 20px rgba(255, 255, 255, 0.05),
-        0 0 30px var(--accent-green-glow);
-    transform: scale(1.05);
+    background: rgba(0, 184, 148, 0.15);
+    box-shadow: 0 0 20px var(--accent-green-glow);
+    transform: scale(1.08);
 }
 
 /* ==========================================================================
@@ -624,7 +632,7 @@ html, body {
 
 .undo-toast {
     position: fixed;
-    bottom: 140px;
+    bottom: calc(110px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
 
@@ -831,21 +839,22 @@ html, body {
 
 .add-job-fab {
     position: fixed;
-    bottom: 160px;
-    right: calc(50% - 215px + 20px);
-    width: 56px;
-    height: 56px;
+    bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+    right: var(--space-md);
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     background: var(--accent-purple);
     color: #fff;
     border: none;
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-family: 'Nunito', sans-serif;
     font-weight: 300;
+    line-height: 1;
     cursor: pointer;
 
-    box-shadow: 0 6px 20px rgba(162, 155, 254, 0.5);
-    z-index: 100;
+    box-shadow: 0 4px 15px rgba(162, 155, 254, 0.4);
+    z-index: 99;
 
     transition: all var(--transition-fast);
     -webkit-tap-highlight-color: transparent;
@@ -853,7 +862,7 @@ html, body {
 
 .add-job-fab:hover {
     transform: scale(1.1) rotate(90deg);
-    box-shadow: 0 8px 30px rgba(162, 155, 254, 0.6);
+    box-shadow: 0 6px 25px rgba(162, 155, 254, 0.5);
 }
 
 .add-job-fab:active {
@@ -862,13 +871,6 @@ html, body {
 
 .add-job-fab[hidden] {
     display: none;
-}
-
-/* Adjust FAB position on smaller screens */
-@media (max-width: 470px) {
-    .add-job-fab {
-        right: 20px;
-    }
 }
 
 /* ==========================================================================
