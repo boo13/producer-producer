@@ -90,6 +90,9 @@
                     <p class="app-list__company">${escapeHtml(opp.company_name || 'Unknown Company')}</p>
                     <p class="app-list__meta">${escapeHtml(date)}</p>
                 </div>
+                <button class="app-list__drag-handle" type="button" aria-label="Drag to reorder" draggable="true">
+                    <span aria-hidden="true">≡</span>
+                </button>
                 <div class="app-list__actions">
                     <button class="app-list__btn${isApplied ? ' app-list__btn--applied' : ''}" type="button">
                         ${isApplied ? 'Applied' : 'Mark Applied'}
