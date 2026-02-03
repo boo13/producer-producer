@@ -20,3 +20,6 @@
 - Vox Media
 - Yahoo
 
+## Dev Notes
+Open Chrome with CORS disabled (temporary, for verification only):
+`open -na "Google Chrome" --args --disable-web-security --user-data-dir=/tmp/chrome-cors`
