@@ -29,6 +29,41 @@
 
         <!-- Applications list -->
         <div class="app-list" id="applications-list" hidden></div>
+
+        <!-- Add Job FAB (Floating Action Button) -->
+        <button class="add-job-fab" id="add-job-fab" type="button" aria-label="Add a job">+</button>
+
+        <!-- Add Job Modal -->
+        <div class="add-job-modal" id="add-job-modal" hidden aria-modal="true" role="dialog" aria-labelledby="add-job-title">
+            <div class="add-job-modal__content">
+                <h2 class="add-job-modal__title" id="add-job-title">Add a Job</h2>
+                <form id="add-job-form">
+                    <div class="add-job__field">
+                        <label class="add-job__label add-job__label--required" for="add-job-url">Job URL</label>
+                        <input class="add-job__input" type="url" id="add-job-url" name="url" required placeholder="https://linkedin.com/jobs/...">
+                    </div>
+                    <div class="add-job__field">
+                        <label class="add-job__label add-job__label--required" for="add-job-title-input">Job Title</label>
+                        <input class="add-job__input" type="text" id="add-job-title-input" name="title" required placeholder="Senior Video Producer">
+                    </div>
+                    <div class="add-job__field">
+                        <label class="add-job__label add-job__label--required" for="add-job-company">Company</label>
+                        <input class="add-job__input" type="text" id="add-job-company" name="company_name" required placeholder="Acme Studios">
+                    </div>
+                    <div class="add-job__field">
+                        <label class="add-job__label" for="add-job-location">Location</label>
+                        <input class="add-job__input" type="text" id="add-job-location" name="location" placeholder="Los Angeles, CA (optional)">
+                    </div>
+                    <div class="add-job__field">
+                        <label class="add-job__label" for="add-job-notes">Notes</label>
+                        <textarea class="add-job__textarea" id="add-job-notes" name="notes" placeholder="Any notes about this job (optional)"></textarea>
+                    </div>
+                    <div class="add-job__error" id="add-job-error"></div>
+                    <button class="add-job__submit" type="submit">Add Job</button>
+                    <button class="add-job__cancel" type="button" id="add-job-cancel">Cancel</button>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Core modules -->

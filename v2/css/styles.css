@@ -524,3 +524,196 @@ body {
     margin: 0;
     line-height: 1.4;
 }
+
+/* ==========================================================================
+   Add Job FAB (Floating Action Button)
+   ========================================================================== */
+
+.add-job-fab {
+    position: fixed;
+    bottom: 140px; /* Above action buttons */
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #4CAF50;
+    color: #fff;
+    border: none;
+    font-size: 2rem;
+    font-family: 'VT323', monospace;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    transition: transform 100ms ease, box-shadow 100ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.add-job-fab:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.add-job-fab:active {
+    transform: scale(0.95);
+}
+
+/* Hide FAB when applications view is active */
+.add-job-fab[hidden] {
+    display: none;
+}
+
+/* ==========================================================================
+   Add Job Modal
+   ========================================================================== */
+
+.add-job-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.add-job-modal[hidden] {
+    display: none;
+}
+
+.add-job-modal__content {
+    background: #252525;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 400px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.add-job-modal__title {
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    color: #00ff00;
+    margin: 0 0 1.5rem;
+    text-align: center;
+}
+
+/* ==========================================================================
+   Add Job Form
+   ========================================================================== */
+
+.add-job__field {
+    margin-bottom: 1rem;
+}
+
+.add-job__label {
+    display: block;
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #ccc;
+    margin-bottom: 0.25rem;
+}
+
+.add-job__label--required::after {
+    content: ' *';
+    color: #ff4444;
+}
+
+.add-job__input,
+.add-job__textarea {
+    width: 100%;
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #00ff00;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 0.75rem;
+    transition: border-color 100ms ease;
+}
+
+.add-job__input:focus,
+.add-job__textarea:focus {
+    outline: none;
+    border-color: #00ff00;
+}
+
+.add-job__input::placeholder,
+.add-job__textarea::placeholder {
+    color: #666;
+}
+
+.add-job__textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.add-job__error {
+    font-family: 'VT323', monospace;
+    font-size: 0.875rem;
+    color: #ff4444;
+    margin-top: 0.5rem;
+    display: none;
+}
+
+.add-job__error--visible {
+    display: block;
+}
+
+/* ==========================================================================
+   Add Job Buttons
+   ========================================================================== */
+
+.add-job__submit {
+    width: 100%;
+    font-family: 'VT323', monospace;
+    font-size: 1.125rem;
+    color: #fff;
+    background: #4CAF50;
+    border: none;
+    border-radius: 4px;
+    padding: 0.75rem;
+    min-height: 48px;
+    cursor: pointer;
+    transition: background 100ms ease, opacity 100ms ease;
+    -webkit-tap-highlight-color: transparent;
+    margin-top: 0.5rem;
+}
+
+.add-job__submit:hover {
+    background: #45a049;
+}
+
+.add-job__submit:active {
+    background: #3d8b40;
+}
+
+.add-job__submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.add-job__cancel {
+    display: block;
+    width: 100%;
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #888;
+    background: transparent;
+    border: none;
+    padding: 0.75rem;
+    min-height: 44px;
+    cursor: pointer;
+    text-align: center;
+    transition: color 100ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.add-job__cancel:hover {
+    color: #ccc;
+}
