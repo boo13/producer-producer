@@ -77,6 +77,34 @@ body {
     gap: 0.5rem;
 }
 
+.app-header__actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.app-header__btn {
+    font-family: 'VT323', monospace;
+    font-size: 1.25rem;
+    color: #00ff00;
+    background: transparent;
+    border: 1px solid #00ff00;
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    min-height: 44px;
+    min-width: 44px;
+    cursor: pointer;
+    transition: background 100ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.app-header__btn:hover {
+    background: rgba(0, 255, 0, 0.15);
+}
+
+.app-header__btn[hidden] {
+    display: none;
+}
+
 .app-header__tab {
     font-family: 'VT323', monospace;
     font-size: 1rem;
@@ -716,4 +744,386 @@ body {
 
 .add-job__cancel:hover {
     color: #ccc;
+}
+
+/* ==========================================================================
+   Login Modal
+   ========================================================================== */
+
+.login-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.login-modal[hidden] {
+    display: none;
+}
+
+.login-modal__content {
+    position: relative;
+    background: #252525;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 360px;
+}
+
+.login-modal__close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    color: #888;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+    transition: color 100ms ease;
+}
+
+.login-modal__close:hover {
+    color: #ccc;
+}
+
+.login-modal__title {
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    color: #00ff00;
+    margin: 0 0 1.5rem;
+    text-align: center;
+}
+
+.login__field {
+    margin-bottom: 1rem;
+}
+
+.login__label {
+    display: block;
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #ccc;
+    margin-bottom: 0.25rem;
+}
+
+.login__input {
+    width: 100%;
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #00ff00;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 0.75rem;
+    transition: border-color 100ms ease;
+}
+
+.login__input:focus {
+    outline: none;
+    border-color: #00ff00;
+}
+
+.login__input::placeholder {
+    color: #666;
+}
+
+.login__checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.login__checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.login__checkbox:checked {
+    background: #00ff00;
+    border-color: #00ff00;
+}
+
+.login__checkbox:checked::after {
+    content: '\2713';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #1a1a1a;
+    line-height: 1;
+}
+
+.login__checkbox:focus {
+    outline: none;
+    border-color: #00ff00;
+}
+
+.login__checkbox-label {
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #ccc;
+    cursor: pointer;
+}
+
+.login__error {
+    font-family: 'VT323', monospace;
+    font-size: 0.875rem;
+    color: #ff4444;
+    margin-bottom: 0.5rem;
+    display: none;
+}
+
+.login__error--visible {
+    display: block;
+}
+
+.login__submit {
+    width: 100%;
+    font-family: 'VT323', monospace;
+    font-size: 1.125rem;
+    color: #fff;
+    background: #4CAF50;
+    border: none;
+    border-radius: 4px;
+    padding: 0.75rem;
+    min-height: 48px;
+    cursor: pointer;
+    transition: background 100ms ease, opacity 100ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.login__submit:hover {
+    background: #45a049;
+}
+
+.login__submit:active {
+    background: #3d8b40;
+}
+
+.login__submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Settings Modal
+   ========================================================================== */
+
+.settings-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.settings-modal[hidden] {
+    display: none;
+}
+
+.settings-modal__content {
+    position: relative;
+    background: #252525;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 360px;
+}
+
+.settings-modal__close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    color: #888;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+    transition: color 100ms ease;
+}
+
+.settings-modal__close:hover {
+    color: #ccc;
+}
+
+.settings-modal__title {
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    color: #00ff00;
+    margin: 0 0 1.5rem;
+    text-align: center;
+}
+
+.settings__field {
+    margin-bottom: 1rem;
+}
+
+.settings__label {
+    display: block;
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #ccc;
+    margin-bottom: 0.25rem;
+}
+
+.settings__input {
+    width: 100%;
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #00ff00;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 0.75rem;
+    transition: border-color 100ms ease;
+}
+
+.settings__input:focus {
+    outline: none;
+    border-color: #00ff00;
+}
+
+.settings__checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings__checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.settings__checkbox:checked {
+    background: #00ff00;
+    border-color: #00ff00;
+}
+
+.settings__checkbox:checked::after {
+    content: '\2713';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #1a1a1a;
+    line-height: 1;
+}
+
+.settings__checkbox:focus {
+    outline: none;
+    border-color: #00ff00;
+}
+
+.settings__checkbox-label {
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #ccc;
+    cursor: pointer;
+}
+
+.settings__error {
+    font-family: 'VT323', monospace;
+    font-size: 0.875rem;
+    color: #ff4444;
+    margin-bottom: 0.5rem;
+    display: none;
+}
+
+.settings__error--visible {
+    display: block;
+}
+
+.settings__buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.settings__submit {
+    flex: 1;
+    font-family: 'VT323', monospace;
+    font-size: 1.125rem;
+    color: #fff;
+    background: #4CAF50;
+    border: none;
+    border-radius: 4px;
+    padding: 0.75rem;
+    min-height: 48px;
+    cursor: pointer;
+    transition: background 100ms ease, opacity 100ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.settings__submit:hover {
+    background: #45a049;
+}
+
+.settings__submit:active {
+    background: #3d8b40;
+}
+
+.settings__submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.settings__cancel {
+    flex: 1;
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: #888;
+    background: transparent;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 0.75rem;
+    min-height: 48px;
+    cursor: pointer;
+    transition: color 100ms ease, border-color 100ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.settings__cancel:hover {
+    color: #ccc;
+    border-color: #777;
 }

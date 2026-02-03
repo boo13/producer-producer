@@ -22,6 +22,10 @@
                 <button class="app-header__tab app-header__tab--active" data-view="swipe" type="button">Swipe</button>
                 <button class="app-header__tab" data-view="applications" type="button">Saved</button>
             </nav>
+            <div class="app-header__actions">
+                <button class="app-header__btn" id="settings-btn" type="button" hidden aria-label="Settings">⚙</button>
+                <button class="app-header__btn" id="login-btn" type="button" aria-label="Login">→</button>
+            </div>
         </header>
 
         <!-- Card stack for swipeable job cards -->
@@ -61,6 +65,51 @@
                     <div class="add-job__error" id="add-job-error"></div>
                     <button class="add-job__submit" type="submit">Add Job</button>
                     <button class="add-job__cancel" type="button" id="add-job-cancel">Cancel</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Login Modal -->
+        <div class="login-modal" id="login-modal" hidden aria-modal="true" role="dialog" aria-labelledby="login-title">
+            <div class="login-modal__content">
+                <button class="login-modal__close" id="login-close" type="button" aria-label="Close">&times;</button>
+                <h2 class="login-modal__title" id="login-title">Login</h2>
+                <form id="login-form">
+                    <div class="login__field">
+                        <label class="login__label" for="login-email">Email</label>
+                        <input class="login__input" type="email" id="login-email" name="email" required placeholder="you@example.com">
+                    </div>
+                    <div class="login__checkbox-field">
+                        <input class="login__checkbox" type="checkbox" id="login-newsletter" name="newsletter" checked>
+                        <label class="login__checkbox-label" for="login-newsletter">Subscribe to weekly job digest</label>
+                    </div>
+                    <div class="login__error" id="login-error"></div>
+                    <button class="login__submit" type="submit">Send Magic Link</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div class="settings-modal" id="settings-modal" hidden aria-modal="true" role="dialog" aria-labelledby="settings-title">
+            <div class="settings-modal__content">
+                <button class="settings-modal__close" id="settings-close" type="button" aria-label="Close">&times;</button>
+                <h2 class="settings-modal__title" id="settings-title">Settings</h2>
+                <form id="settings-form">
+                    <div class="settings__field">
+                        <div class="settings__checkbox-field">
+                            <input class="settings__checkbox" type="checkbox" id="settings-digest-enabled" name="digest_enabled" checked>
+                            <label class="settings__checkbox-label" for="settings-digest-enabled">Email digest enabled</label>
+                        </div>
+                    </div>
+                    <div class="settings__field">
+                        <label class="settings__label" for="settings-digest-threshold">Digest threshold (0-100)</label>
+                        <input class="settings__input" type="number" id="settings-digest-threshold" name="digest_threshold" min="0" max="100" value="80">
+                    </div>
+                    <div class="settings__error" id="settings-error"></div>
+                    <div class="settings__buttons">
+                        <button class="settings__submit" type="submit">Save</button>
+                        <button class="settings__cancel" type="button" id="settings-cancel">Cancel</button>
+                    </div>
                 </form>
             </div>
         </div>
