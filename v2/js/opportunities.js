@@ -103,14 +103,16 @@
         card.innerHTML = `
             <div class="swipe-overlay-left" aria-hidden="true">NOPE</div>
             <div class="swipe-overlay-right" aria-hidden="true">SAVE</div>
+            ${opportunity.score ? `<span class="job-card__score ${getScoreTierClass(opportunity.score)}">${Math.round(opportunity.score)}</span>` : ''}
             <div class="job-card__header">
                 <h2 class="job-card__title">${escapeHtml(opportunity.title)}</h2>
                 <p class="job-card__company">${escapeHtml(opportunity.company_name || 'Unknown Company')}</p>
             </div>
-            <p class="job-card__meta">${escapeHtml(location)}</p>
-            <p class="job-card__meta">${escapeHtml(salary)}</p>
-            <p class="job-card__meta">${escapeHtml(date)}</p>
-            ${opportunity.score ? `<span class="job-card__score ${getScoreTierClass(opportunity.score)}">${Math.round(opportunity.score)}</span>` : ''}
+            <div class="job-card__meta-container">
+                <p class="job-card__meta job-card__meta--location">${escapeHtml(location)}</p>
+                <p class="job-card__meta job-card__meta--salary">${escapeHtml(salary)}</p>
+                <p class="job-card__meta job-card__meta--date">${escapeHtml(date)}</p>
+            </div>
         `;
 
         return card;
