@@ -296,6 +296,39 @@ class APIClient {
     }
 
     /**
+     * Opportunities: Create a new opportunity (user-submitted job)
+     * @param {Object} data - Opportunity data
+     * @param {string} data.title - Job title (required)
+     * @param {string} data.company_name - Company name (required)
+     * @param {string} data.url - Job URL (required)
+     * @param {string} [data.location] - Location (optional)
+     * @param {string} [data.notes] - Notes/description (optional)
+     */
+    async addOpportunity(data) {
+        const payload = {
+            external_id: data.external_id || `user-${Date.now()}`,
+            source: 'user-submitted',
+            source_company: 'user',
+            title: data.title,
+            company_name: data.company_name,
+            url: data.url,
+        };
+
+        // Add optional fields if provided
+        if (data.location) {
+            payload.location_raw = data.location;
+        }
+        if (data.notes) {
+            payload.description = data.notes;
+        }
+
+        return await this.request('/opportunities', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+    }
+
+    /**
      * Health check
      */
     async healthCheck() {
