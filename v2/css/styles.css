@@ -727,11 +727,65 @@ html, body {
     border-radius: var(--radius-md);
     border: 2px solid var(--card-border);
     transition: all var(--transition-fast);
+    position: relative;
 }
 
 .app-list__item:hover {
     border-color: var(--accent-green-light);
     transform: translateX(4px);
+}
+
+/* Drag handle for reordering */
+.app-list__drag-handle {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    cursor: grab;
+    font-size: 20px;
+    line-height: 1;
+    color: #666;
+    touch-action: none;
+    user-select: none;
+}
+
+.app-list__drag-handle:hover {
+    color: #000;
+}
+
+.app-list__drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Dragging state */
+.app-list__item--dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+}
+
+/* Drop zone indicator */
+.app-list__item--drop-above::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #007bff;
+    border-radius: 2px;
+}
+
+.app-list__item--drop-below::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #007bff;
+    border-radius: 2px;
 }
 
 .app-list__info {
