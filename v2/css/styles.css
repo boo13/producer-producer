@@ -237,17 +237,53 @@ body {
     line-height: 1.4;
 }
 
-/* Score badge (optional) */
+/* Score sticker */
 .job-card__score {
-    display: inline-block;
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    height: 56px;
+    border-radius: 50%;
     font-family: 'VT323', monospace;
-    font-size: 0.875rem;
-    color: var(--accent-green);
-    background: rgba(46, 204, 113, 0.1);
-    border: 1px solid var(--accent-green);
-    border-radius: 4px;
-    padding: 0.25rem 0.5rem;
-    margin-top: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    transform: rotate(-12deg);
+    z-index: 5;
+}
+
+/* High score (80-100): vibrant green sticker */
+.job-card__score--high {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: #fff;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 8px rgba(46, 204, 113, 0.4);
+    animation: score-pulse 2s ease-in-out infinite;
+}
+
+/* Medium score (60-79): neutral beige sticker */
+.job-card__score--medium {
+    background: var(--card-border);
+    color: var(--ink);
+    border: 2px solid var(--ink-light);
+}
+
+/* Low score (<60): subdued grey sticker */
+.job-card__score--low {
+    background: #e0e0e0;
+    color: var(--ink-light);
+    border: 1px dashed var(--ink-light);
+    min-width: 48px;
+    height: 48px;
+    font-size: 1.25rem;
+}
+
+@keyframes score-pulse {
+    0%, 100% { transform: rotate(-12deg) scale(1); }
+    50% { transform: rotate(-12deg) scale(1.05); }
 }
 
 /* ==========================================================================

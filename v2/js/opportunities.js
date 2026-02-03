@@ -70,6 +70,17 @@
     }
 
     // ==========================================================================
+    // Score Tier Helper
+    // ==========================================================================
+
+    function getScoreTierClass(score) {
+        const s = Math.round(score);
+        if (s >= 80) return 'job-card__score--high';
+        if (s >= 60) return 'job-card__score--medium';
+        return 'job-card__score--low';
+    }
+
+    // ==========================================================================
     // Card Creation
     // ==========================================================================
 
@@ -99,7 +110,7 @@
             <p class="job-card__meta">${escapeHtml(location)}</p>
             <p class="job-card__meta">${escapeHtml(salary)}</p>
             <p class="job-card__meta">${escapeHtml(date)}</p>
-            ${opportunity.score ? `<span class="job-card__score">Score: ${opportunity.score.toFixed(1)}</span>` : ''}
+            ${opportunity.score ? `<span class="job-card__score ${getScoreTierClass(opportunity.score)}">${Math.round(opportunity.score)}</span>` : ''}
         `;
 
         return card;
