@@ -355,8 +355,8 @@
             // If authenticated, filter out ignored/applied
             if (window.api?.isAuthenticated?.()) {
                 const [ignored, applied] = await Promise.all([
-                    window.api.getUserOpportunities({ status_filter: 'ignored', limit: 200 }),
-                    window.api.getUserOpportunities({ status_filter: 'applied', limit: 200 }),
+                    window.api.getUserOpportunities({ status_filter: 'ignored', limit: 100 }),
+                    window.api.getUserOpportunities({ status_filter: 'applied', limit: 100 }),
                 ]);
 
                 const hiddenIds = new Set([
