@@ -278,6 +278,17 @@ class APIClient {
     }
 
     /**
+     * Opportunities: Bulk reorder saved jobs
+     * @param {Array<{opportunity_id: number, display_order: number}>} items - Array of items to reorder
+     */
+    async reorderOpportunities(items) {
+        return await this.request('/users/me/opportunities/reorder', {
+            method: 'PUT',
+            body: JSON.stringify(items),
+        });
+    }
+
+    /**
      * Opportunities: Get single opportunity
      */
     async getOpportunity(id) {
