@@ -130,13 +130,14 @@ body {
     padding: 0.5rem 1rem;
     min-height: 44px;
     cursor: pointer;
-    transition: color 100ms ease, border-color 100ms ease, background 100ms ease;
+    transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
     -webkit-tap-highlight-color: transparent;
 }
 
 .app-header__tab:hover {
     color: #ccc;
     border-color: #777;
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .app-header__tab--active {
@@ -176,7 +177,15 @@ body {
     user-select: none;
     will-change: transform;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: transform 180ms ease-out, opacity 180ms ease-out;
+    transition: transform 200ms ease-out, opacity 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+/* Card hover lift (desktop only, top card only) */
+@media (hover: hover) {
+    .job-card[data-stack-position="1"]:not(.is-swipe-active):hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
 }
 
 /* Stacked cards depth effect */
@@ -307,7 +316,7 @@ body {
     letter-spacing: 0.1em;
     opacity: 0;
     pointer-events: none;
-    border-radius: 8px;
+    border-radius: 12px;
     z-index: 10;
 }
 
@@ -385,8 +394,12 @@ body {
     background: #252525;
     font-size: 2rem;
     cursor: pointer;
-    transition: transform 100ms ease, background 100ms ease;
+    transition: all 150ms ease;
     -webkit-tap-highlight-color: transparent;
+}
+
+.action-button:hover {
+    transform: scale(1.08);
 }
 
 .action-button:active {
@@ -409,6 +422,7 @@ body {
 
 .action-button--save:hover {
     background: rgba(46, 204, 113, 0.15);
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
 }
 
 /* ==========================================================================
@@ -423,9 +437,9 @@ body {
     display: flex;
     align-items: center;
     gap: 1rem;
-    background: #333;
-    border: 1px solid #555;
-    border-radius: 8px;
+    background: var(--card-bg);
+    border: 2px solid var(--card-border);
+    border-radius: 12px;
     padding: 0.75rem 1rem;
     z-index: 200;
     animation: toast-slide-up 200ms ease-out;
@@ -450,7 +464,7 @@ body {
 .undo-toast__text {
     font-family: 'VT323', monospace;
     font-size: 1rem;
-    color: #ccc;
+    color: var(--ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -648,6 +662,17 @@ body {
    Add Job Modal
    ========================================================================== */
 
+/* Modal animations */
+@keyframes modal-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modal-slide-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .add-job-modal {
     position: fixed;
     top: 0;
@@ -660,6 +685,7 @@ body {
     align-items: center;
     justify-content: center;
     padding: 1rem;
+    animation: modal-fade-in 200ms ease-out;
 }
 
 .add-job-modal[hidden] {
@@ -673,6 +699,7 @@ body {
     padding: 1.5rem;
     width: 100%;
     max-width: 400px;
+    animation: modal-slide-up 200ms ease-out;
     max-height: 90vh;
     overflow-y: auto;
 }
@@ -816,6 +843,7 @@ body {
     align-items: center;
     justify-content: center;
     padding: 1rem;
+    animation: modal-fade-in 200ms ease-out;
 }
 
 .login-modal[hidden] {
@@ -830,6 +858,7 @@ body {
     padding: 1.5rem;
     width: 100%;
     max-width: 360px;
+    animation: modal-slide-up 200ms ease-out;
 }
 
 .login-modal__close {
@@ -997,6 +1026,7 @@ body {
     align-items: center;
     justify-content: center;
     padding: 1rem;
+    animation: modal-fade-in 200ms ease-out;
 }
 
 .settings-modal[hidden] {
@@ -1011,6 +1041,7 @@ body {
     padding: 1.5rem;
     width: 100%;
     max-width: 360px;
+    animation: modal-slide-up 200ms ease-out;
 }
 
 .settings-modal__close {
