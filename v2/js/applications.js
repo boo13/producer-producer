@@ -27,17 +27,16 @@
         return div.innerHTML;
     }
 
-    function formatLocation(opp) {
-        const parts = [];
+    function formatDate(dateString) {
+        if (!dateString) return 'Date unknown';
 
-        if (opp.location_city || opp.city) parts.push(opp.location_city || opp.city);
-        if (opp.location_state || opp.state) parts.push(opp.location_state || opp.state);
-
-        if (parts.length === 0) {
-            return opp.location_raw || 'Location not specified';
+        try {
+            const date = new Date(dateString);
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
+        } catch (err) {
+            return 'Date unknown';
         }
-
-        return parts.join(', ');
     }
 
     // ==========================================================================
@@ -83,13 +82,13 @@
             item.className = 'app-list__item';
             item.dataset.opportunityId = String(oppId);
 
-            const location = formatLocation(opp);
+            const date = formatDate(opp.posted_date || opp.created_at || opp.first_seen);
 
             item.innerHTML = `
                 <div class="app-list__info">
                     <p class="app-list__title">${escapeHtml(opp.title)}</p>
                     <p class="app-list__company">${escapeHtml(opp.company_name || 'Unknown Company')}</p>
-                    <p class="app-list__meta">${escapeHtml(location)}</p>
+                    <p class="app-list__meta">${escapeHtml(date)}</p>
                 </div>
                 <div class="app-list__actions">
                     <button class="app-list__btn${isApplied ? ' app-list__btn--applied' : ''}" type="button">
