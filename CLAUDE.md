@@ -8,7 +8,9 @@ A public-facing website for video producers to find industry-relevant job listin
 
 This site provides curated job listings specifically for video producers, filtering out unrelated "producer" roles (music producers, manufacturing producers, etc.) using AI and automation.
 
-**Design Philosophy:** Retro faux desktop aesthetic with interactive macOS-inspired window behaviors.
+**Design Philosophy:** 
+V1 - Retro faux desktop aesthetic with interactive macOS-inspired window behaviors.
+v2 - TBD
 
 ## Architecture
 
