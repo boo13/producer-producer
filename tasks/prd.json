@@ -1,0 +1,238 @@
+{
+  "project": "ProducerProducer",
+  "branchName": "ralph/stats-dashboard",
+  "description": "Stats Dashboard - comprehensive auto-refreshing dashboard page showing database health and pipeline activity",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create /stats public aggregate endpoint",
+      "description": "As the dashboard page, I need a single public endpoint that returns all non-sensitive aggregate stats in one call.",
+      "acceptanceCriteria": [
+        "GET /stats returns JSON with: total_opportunities, active_opportunities, opportunities_added_24h (first_seen >= NOW() - 24h), opportunities_added_7d (first_seen >= NOW() - 7d), filter_status_counts (pass/fail/pending), avg_score, median_score, remote_percentage, has_salary_percentage, oldest_active_posted_date, newest_posted_date, total_companies, active_companies",
+        "All counts use SQL aggregates (COUNT, AVG, CASE WHEN) — no full result sets loaded into Python",
+        "Endpoint requires no authentication",
+        "Empty-state: 0 for counts, null for dates, 0.0 for percentages, empty list [] for arrays",
+        "Create stats router in fly_app/routers/stats.py and register in main.py",
+        "Define Pydantic response schema in schemas.py",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "DONE. Created fly_app/routers/stats.py with GET /stats endpoint, added FilterStatusCounts and PublicStatsResponse schemas to schemas.py, registered router in main.py."
+    },
+    {
+      "id": "US-002",
+      "title": "Add score distribution and sources breakdown to /stats",
+      "description": "As the dashboard page, I need score histogram and source/company breakdowns added to the /stats endpoint response.",
+      "acceptanceCriteria": [
+        "GET /stats response additionally includes: score_distribution (histogram with half-open 10-point buckets [0,10), [10,20), ..., [90,100] — final bucket includes 100), top_companies_by_listings (top 10 by count of active opportunities), sources_breakdown (GROUP BY on opportunities.source column)",
+        "Score distribution uses SQL CASE WHEN for bucketing, not Python-side grouping",
+        "Update the Pydantic response schema in schemas.py to include new fields",
+        "Response time under 2 seconds; if not, split into /stats and /stats/scores as fallback",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "DONE. Added score_distribution (10-point SQL CASE WHEN buckets), top_companies_by_listings (top 10 by active count), and sources_breakdown (GROUP BY source) queries to GET /stats. Schemas already existed."
+    },
+    {
+      "id": "US-003",
+      "title": "Add unit and integration tests for /stats endpoint",
+      "description": "As a developer, I need tests to verify the /stats endpoint returns correct data.",
+      "acceptanceCriteria": [
+        "Unit tests verify correct counts with mock data: empty DB, single row, multiple rows",
+        "Unit test verifies score_distribution bucketing (boundary values: 0, 9.99, 10, 89.99, 90, 100)",
+        "Integration test verifies response schema shape matches Pydantic model",
+        "Integration test verifies endpoint is publicly accessible (no auth required)",
+        "Tests pass"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "DONE. Created tests/test_stats_router.py with 8 tests (schema defaults, public access, empty DB, counts, score bucketing, top companies, sources). PostgreSQL-dependent tests skip gracefully on SQLite."
+    },
+    {
+      "id": "US-004",
+      "title": "Create /stats/admin endpoint for sensitive stats",
+      "description": "As an admin, I need operational stats behind auth: user counts, filter evaluations, AI analyses, pending company reviews.",
+      "acceptanceCriteria": [
+        "GET /stats/admin returns JSON with: total_users, active_users_7d (users with last_active within 7 days), filter_evaluations_total, filter_evaluations_24h, ai_analyses_total, ai_analyses_24h, pending_company_reviews (count from company_review_queue where status='pending')",
+        "Requires admin JWT (uses CurrentAdminUser dependency)",
+        "Returns 401 for unauthenticated requests, 403 for non-admin users",
+        "Empty-state: 0 for counts, null for timestamps, empty list [] for arrays",
+        "Add to existing stats router in fly_app/routers/stats.py",
+        "Define Pydantic response schema in schemas.py",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "DONE. Created GET /stats/admin endpoint with CurrentAdminUser auth. Returns total_users, active_users_7d, filter_evaluations_total/24h, ai_analyses_total/24h, pending_company_reviews. Added AdminStatsResponse + supporting schemas to schemas.py."
+    },
+    {
+      "id": "US-005",
+      "title": "Add maintenance runs and health to /stats/admin",
+      "description": "As an admin, I need maintenance run history and per-task health status in the admin stats.",
+      "acceptanceCriteria": [
+        "GET /stats/admin response additionally includes: last_maintenance_runs (last 5 rows from maintenance_runs table with task name, status, duration, timestamp), maintenance_health (last successful run timestamp per task from maintenance_runs where status='succeeded')",
+        "Update the Pydantic response schema to include new fields",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "DONE. Added last_maintenance_runs (last 5 from maintenance_runs) and maintenance_health (last success per task) to /stats/admin response."
+    },
+    {
+      "id": "US-006",
+      "title": "Add filter rejection summary and AI disagreement count to /stats/admin",
+      "description": "As an admin, I need rejection funnel summary and AI disagreement count in admin stats.",
+      "acceptanceCriteria": [
+        "GET /stats/admin response additionally includes: filter_rejection_summary (top 5 rejection reasons with counts), ai_disagreement_count (count only, not full list)",
+        "Reuse REQUIRED_RULE_REASONS and _get_rule_name from analytics.py — import the constants, extract shared helper if needed",
+        "Reuse AI disagreement threshold logic from analytics.py get_ai_disagreements (min_score_adjustment=5.0, min_experience_match=70.0)",
+        "Update the Pydantic response schema to include new fields",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "DONE. Added filter_rejection_summary (top 5, imports REQUIRED_RULE_REASONS from analytics.py) and ai_disagreement_count (reuses threshold logic) to /stats/admin."
+    },
+    {
+      "id": "US-007",
+      "title": "Add tests for /stats/admin endpoint",
+      "description": "As a developer, I need tests for the admin stats endpoint.",
+      "acceptanceCriteria": [
+        "Unit tests for aggregation logic with mock data (users, maintenance runs, filter evaluations, AI analyses)",
+        "Integration test that /stats/admin returns 401 without auth",
+        "Integration test that /stats/admin returns correct schema with admin auth",
+        "Tests pass"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "DONE. Created tests/test_stats_admin_router.py with 10 tests (auth required, admin required, schema defaults, empty DB, user counts, evaluations, maintenance runs, rejection summary, AI disagreements). PostgreSQL-dependent tests skip on SQLite."
+    },
+    {
+      "id": "US-008",
+      "title": "Create stats.html page shell with header and API wiring",
+      "description": "As a visitor, I can open stats.html and see the page header with connection status and last-refreshed timestamp.",
+      "acceptanceCriteria": [
+        "stats.html in frontend repo root (same level as index.html)",
+        "Includes js/api.js via <script src='js/api.js?v=YYYYMMDD'> (inherits ?api=local behavior for dev)",
+        "Includes js/stats.js?v=YYYYMMDD for all dashboard logic",
+        "Includes css/stats.css?v=YYYYMMDD for styles (standalone — no dependency on css/styles.css)",
+        "Shows header with 'Producer-Producer Stats' and last-refreshed timestamp",
+        "Green/red connection indicator in header (calls /health endpoint)",
+        "Displays API response time (latency) next to connection indicator",
+        "If API unreachable, shows red 'API Offline' banner with last-known-good timestamp",
+        "Dark theme, high-contrast text, monospace for numbers — information-dense ops aesthetic",
+        "No external frameworks or libraries — vanilla HTML/CSS/JS",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "DONE. Created stats.html with header, connection indicator, latency display, API offline banner. Uses js/api.js and js/stats.js. Standalone css/stats.css with dark theme, monospace numbers, ops aesthetic."
+    },
+    {
+      "id": "US-009",
+      "title": "Add public overview cards and data freshness section",
+      "description": "As a visitor, I can see high-level listing stats in overview cards fetched from /stats.",
+      "acceptanceCriteria": [
+        "Overview cards row: Total listings, Active listings, Added (24h), Added (7d), Total companies, Active companies",
+        "Data freshness indicators: Newest posted date, oldest active posted date, remote %, salary info %",
+        "If opportunities_added_24h is 0, show yellow warning banner: 'No new opportunities added in the past 24 hours'",
+        "Numbers formatted with commas for thousands, percentages with 1 decimal",
+        "Cards show '0' or 'N/A' for empty states",
+        "Mobile responsive — cards stack vertically below 768px",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "DONE. Overview cards (total, active, 24h, 7d, companies) + data freshness (newest, oldest, remote%, salary%, avg/median score). Yellow warning banner when 24h=0. Comma formatting, responsive grid."
+    },
+    {
+      "id": "US-010",
+      "title": "Add filter pipeline, score distribution histogram, and sources section",
+      "description": "As a visitor, I can see filter pass/fail breakdown, score distribution histogram, top companies, and sources.",
+      "acceptanceCriteria": [
+        "Filter Pipeline section: Pass/Fail/Pending counts shown as horizontal stacked bar + numbers",
+        "Score Distribution section: CSS-only bar chart histogram (no external charting library)",
+        "Top Companies section: Table of top 10 companies by listing count",
+        "Sources section: Breakdown of listings by source column value",
+        "Empty states: tables show 'No data available' row; histogram shows empty bars",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "DONE. Horizontal stacked bar for pass/fail/pending pipeline. CSS-only histogram for score distribution. Top 10 companies table. Sources breakdown table. Empty states handled."
+    },
+    {
+      "id": "US-011",
+      "title": "Add admin login button and admin stats section",
+      "description": "As the creator, I can log in and see sensitive operational stats alongside public ones.",
+      "acceptanceCriteria": [
+        "Admin section hidden by default, shows after successful admin auth",
+        "Reuses existing api.js API client and auth token from localStorage (shared with main site, same origin)",
+        "Shows 'Login for admin stats' button when not authenticated",
+        "After auth, shows: user count, active users (7d), filter evaluation counts (total + 24h), AI analysis counts (total + 24h), pending company reviews count",
+        "AI Disagreements: count displayed (no inline expansion for v1)",
+        "Empty states: counts show 0",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": "DONE. Admin section hidden by default, shows login button. After auth, displays user counts, eval counts, AI counts, pending reviews, AI disagreements. Reuses api.js auth token from localStorage."
+    },
+    {
+      "id": "US-012",
+      "title": "Add maintenance runs table and health section to admin view",
+      "description": "As the creator, I can see maintenance run history and per-task health status.",
+      "acceptanceCriteria": [
+        "Maintenance Runs table: Last 5 runs with task name, status badge (green=succeeded, red=failed, yellow=pending/running), duration, timestamp",
+        "Maintenance Health section: Per-task last successful run with time-ago display (e.g. '2h ago', '3d ago'), red highlight if >24h since last success",
+        "Filter Rejection Summary: Top 5 rejection reasons as ranked list with counts",
+        "Empty states: tables show 'No runs recorded'; maintenance health shows 'Never' if no successful run exists",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": "DONE. Maintenance runs table with status badges (green/red/yellow). Health grid with time-ago display, red highlight if >24h stale. Top 5 rejection reasons as ranked list."
+    },
+    {
+      "id": "US-013",
+      "title": "Add auto-refresh polling with pause/resume",
+      "description": "As the creator, I want the dashboard to stay current without manual refreshing.",
+      "acceptanceCriteria": [
+        "Page auto-refreshes data every 60 seconds",
+        "'Last updated' timestamp in header updates on each refresh",
+        "Visual pulse/flash animation on data change so updates are noticeable",
+        "Pause/resume button to stop polling when not needed",
+        "Manual 'Refresh now' button for immediate update",
+        "Polling pauses when browser tab is not visible (document.hidden)",
+        "Network errors show non-intrusive warning bar, do not break polling loop",
+        "If admin JWT expires during polling (401 response), admin section reverts to 'Login for admin stats' prompt; public section continues",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": "DONE. 60s auto-refresh with pause/resume button, manual refresh button, last-updated timestamp. Pulse animation on data change. Pauses when tab hidden (visibilitychange). 401 during polling reverts admin section to login prompt."
+    },
+    {
+      "id": "US-014",
+      "title": "Add graceful per-section error handling",
+      "description": "As the creator, I want individual section errors to degrade gracefully.",
+      "acceptanceCriteria": [
+        "Individual section errors show 'Error loading' in that section only — other sections still work",
+        "Sections retry on next polling cycle automatically",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": "DONE. Per-section error handling with setSectionError/clearSectionError helpers. Failed sections show 'Error loading — will retry' message, other sections continue. Automatic retry on next polling cycle."
+    }
+  ]
+}

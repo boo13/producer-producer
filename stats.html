@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Producer-Producer Stats</title>
+    <link rel="stylesheet" href="css/stats.css?v=20260209">
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-left">
+            <h1 class="header-title">Producer-Producer Stats</h1>
+            <span class="connection-indicator" id="connection-indicator">
+                <span class="indicator-dot"></span>
+                <span class="indicator-text">Checking...</span>
+                <span class="latency-text" id="latency-text"></span>
+            </span>
+        </div>
+        <div class="header-right">
+            <span class="last-updated" id="last-updated">—</span>
+            <button class="btn btn-sm" id="refresh-btn" title="Refresh now">↻ Refresh</button>
+            <button class="btn btn-sm" id="pause-btn" title="Pause auto-refresh">⏸ Pause</button>
+        </div>
+    </header>
+
+    <div class="api-offline-banner is-hidden" id="api-offline-banner">
+        API Offline — last successful update: <span id="last-good-time">never</span>
+    </div>
+
+    <div class="warning-banner is-hidden" id="no-new-opps-banner">
+        ⚠ No new opportunities added in the past 24 hours
+    </div>
+
+    <div class="error-banner is-hidden" id="error-banner"></div>
+
+    <main class="dashboard">
+        <!-- US-009: Overview Cards -->
+        <section class="section" id="section-overview">
+            <h2 class="section-title">Overview</h2>
+            <div class="cards-row" id="overview-cards">
+                <div class="card"><div class="card-value" id="stat-total">—</div><div class="card-label">Total Listings</div></div>
+                <div class="card"><div class="card-value" id="stat-active">—</div><div class="card-label">Active Listings</div></div>
+                <div class="card"><div class="card-value" id="stat-24h">—</div><div class="card-label">Added (24h)</div></div>
+                <div class="card"><div class="card-value" id="stat-7d">—</div><div class="card-label">Added (7d)</div></div>
+                <div class="card"><div class="card-value" id="stat-companies">—</div><div class="card-label">Total Companies</div></div>
+                <div class="card"><div class="card-value" id="stat-active-companies">—</div><div class="card-label">Active Companies</div></div>
+            </div>
+        </section>
+
+        <!-- US-009: Data Freshness -->
+        <section class="section" id="section-freshness">
+            <h2 class="section-title">Data Freshness</h2>
+            <div class="cards-row">
+                <div class="card card-sm"><div class="card-value" id="stat-newest">—</div><div class="card-label">Newest Posted</div></div>
+                <div class="card card-sm"><div class="card-value" id="stat-oldest-active">—</div><div class="card-label">Oldest Active</div></div>
+                <div class="card card-sm"><div class="card-value" id="stat-remote-pct">—</div><div class="card-label">Remote %</div></div>
+                <div class="card card-sm"><div class="card-value" id="stat-salary-pct">—</div><div class="card-label">Has Salary %</div></div>
+                <div class="card card-sm"><div class="card-value" id="stat-avg-score">—</div><div class="card-label">Avg Score</div></div>
+                <div class="card card-sm"><div class="card-value" id="stat-median-score">—</div><div class="card-label">Median Score</div></div>
+            </div>
+        </section>
+
+        <!-- US-010: Filter Pipeline -->
+        <section class="section" id="section-pipeline">
+            <h2 class="section-title">Filter Pipeline</h2>
+            <div class="pipeline-bar" id="pipeline-bar"></div>
+            <div class="pipeline-legend" id="pipeline-legend"></div>
+        </section>
+
+        <!-- US-010: Score Distribution -->
+        <section class="section" id="section-scores">
+            <h2 class="section-title">Score Distribution</h2>
+            <div class="histogram" id="score-histogram"></div>
+        </section>
+
+        <!-- US-010: Top Companies -->
+        <section class="section" id="section-companies">
+            <h2 class="section-title">Top Companies by Listings</h2>
+            <table class="data-table" id="companies-table">
+                <thead><tr><th>#</th><th>Company</th><th>Listings</th></tr></thead>
+                <tbody><tr><td colspan="3" class="empty-row">Loading...</td></tr></tbody>
+            </table>
+        </section>
+
+        <!-- US-010: Sources -->
+        <section class="section" id="section-sources">
+            <h2 class="section-title">Sources</h2>
+            <table class="data-table" id="sources-table">
+                <thead><tr><th>Source</th><th>Count</th></tr></thead>
+                <tbody><tr><td colspan="2" class="empty-row">Loading...</td></tr></tbody>
+            </table>
+        </section>
+
+        <!-- US-011: Admin Section -->
+        <section class="section admin-section" id="section-admin">
+            <h2 class="section-title">Admin Stats</h2>
+            <div class="admin-login" id="admin-login">
+                <button class="btn" id="admin-login-btn">Login for admin stats</button>
+            </div>
+            <div class="admin-content is-hidden" id="admin-content">
+                <div class="cards-row" id="admin-cards">
+                    <div class="card"><div class="card-value" id="stat-users">—</div><div class="card-label">Total Users</div></div>
+                    <div class="card"><div class="card-value" id="stat-active-users">—</div><div class="card-label">Active Users (7d)</div></div>
+                    <div class="card"><div class="card-value" id="stat-evals-total">—</div><div class="card-label">Filter Evals</div></div>
+                    <div class="card"><div class="card-value" id="stat-evals-24h">—</div><div class="card-label">Evals (24h)</div></div>
+                    <div class="card"><div class="card-value" id="stat-ai-total">—</div><div class="card-label">AI Analyses</div></div>
+                    <div class="card"><div class="card-value" id="stat-ai-24h">—</div><div class="card-label">AI (24h)</div></div>
+                    <div class="card"><div class="card-value" id="stat-pending-reviews">—</div><div class="card-label">Pending Reviews</div></div>
+                    <div class="card"><div class="card-value" id="stat-ai-disagreements">—</div><div class="card-label">AI Disagreements</div></div>
+                </div>
+
+                <!-- US-012: Maintenance Runs -->
+                <h3 class="subsection-title">Maintenance Runs</h3>
+                <table class="data-table" id="maintenance-table">
+                    <thead><tr><th>Task</th><th>Status</th><th>Duration</th><th>Timestamp</th></tr></thead>
+                    <tbody><tr><td colspan="4" class="empty-row">No runs recorded</td></tr></tbody>
+                </table>
+
+                <!-- US-012: Maintenance Health -->
+                <h3 class="subsection-title">Maintenance Health</h3>
+                <div class="health-grid" id="health-grid">
+                    <span class="empty-row">No data</span>
+                </div>
+
+                <!-- US-012: Rejection Summary -->
+                <h3 class="subsection-title">Top Rejection Reasons</h3>
+                <ol class="rejection-list" id="rejection-list">
+                    <li class="empty-row">No data</li>
+                </ol>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/api.js?v=20260209"></script>
+    <script src="js/stats.js?v=20260209"></script>
+</body>
+
+</html>
