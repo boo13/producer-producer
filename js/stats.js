@@ -155,7 +155,8 @@
         pulseIfChanged('stat-active-companies', fmt(data.active_companies));
 
         // Data freshness
-        pulseIfChanged('stat-newest', fmtDate(data.newest_posted_date));
+        pulseIfChanged('stat-newest-date', fmtDate(data.newest_posted_date));
+        pulseIfChanged('stat-newest-time', fmtTime(data.newest_posted_date));
         pulseIfChanged('stat-oldest-active', fmtDate(data.oldest_active_posted_date));
         pulseIfChanged('stat-remote-pct', fmtPct(data.remote_percentage));
         pulseIfChanged('stat-salary-pct', fmtPct(data.has_salary_percentage));
