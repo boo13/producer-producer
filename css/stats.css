@@ -355,6 +355,69 @@ body {
     margin-bottom: 2px;
 }
 
+/* ========== Line Chart (Growth) ========== */
+
+.line-chart-container {
+    position: relative;
+    height: 180px;
+    padding: 20px 0 28px 48px;
+}
+
+.line-chart-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.line-chart-svg .chart-grid-line {
+    stroke: var(--border);
+    stroke-width: 1;
+    stroke-dasharray: 4 4;
+}
+
+.line-chart-svg .chart-line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.line-chart-svg .chart-area {
+    fill: url(#growth-gradient);
+}
+
+.line-chart-svg .chart-axis-label {
+    fill: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10px;
+}
+
+.line-chart-svg .chart-dot {
+    fill: var(--accent);
+    r: 0;
+    transition: r 0.15s;
+}
+
+.line-chart-svg .chart-dot:hover {
+    r: 4;
+}
+
+.line-chart-tooltip {
+    position: absolute;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    pointer-events: none;
+    white-space: nowrap;
+    display: none;
+    z-index: 10;
+}
+
 /* ========== Data Tables ========== */
 
 .data-table {

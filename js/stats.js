@@ -248,6 +248,93 @@
             .join('');
     }
 
+    function renderGrowthChart(dataPoints) {
+        const container = $id('growth-chart');
+        if (!container) return;
+
+        if (!dataPoints || dataPoints.length < 2) {
+            container.innerHTML = '<span class="empty-row">Not enough data for chart</span>';
+            return;
+        }
+
+        const W = container.clientWidth - 48;
+        const H = container.clientHeight - 48;
+        const maxCount = dataPoints[dataPoints.length - 1].count;
+        const minCount = dataPoints[0].count;
+        const range = maxCount - minCount || 1;
+
+        const xStep = W / (dataPoints.length - 1);
+
+        function px(i) {
+            return i * xStep;
+        }
+        function py(count) {
+            return H - ((count - minCount) / range) * H;
+        }
+
+        const gridLines = 4;
+        let gridSvg = '';
+        let yLabelsSvg = '';
+        for (let g = 0; g <= gridLines; g++) {
+            const val = minCount + (range * g) / gridLines;
+            const y = py(val);
+            gridSvg += `<line class="chart-grid-line" x1="0" y1="${y}" x2="${W}" y2="${y}" />`;
+            yLabelsSvg += `<text class="chart-axis-label" x="-8" y="${y + 3}" text-anchor="end">${fmt(Math.round(val))}</text>`;
+        }
+
+        const points = dataPoints.map((d, i) => `${px(i)},${py(d.count)}`).join(' ');
+        const areaPath = `M0,${H} L${dataPoints.map((d, i) => `${px(i)},${py(d.count)}`).join(' L')} L${W},${H} Z`;
+
+        const maxLabels = Math.min(dataPoints.length, Math.floor(W / 60));
+        const labelStep = Math.max(1, Math.floor(dataPoints.length / maxLabels));
+        let xLabelsSvg = '';
+        for (let i = 0; i < dataPoints.length; i += labelStep) {
+            const d = new Date(dataPoints[i].date + 'T00:00:00');
+            const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            xLabelsSvg += `<text class="chart-axis-label" x="${px(i)}" y="${H + 18}" text-anchor="middle">${label}</text>`;
+        }
+        if ((dataPoints.length - 1) % labelStep !== 0) {
+            const last = dataPoints[dataPoints.length - 1];
+            const d = new Date(last.date + 'T00:00:00');
+            const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            xLabelsSvg += `<text class="chart-axis-label" x="${px(dataPoints.length - 1)}" y="${H + 18}" text-anchor="middle">${label}</text>`;
+        }
+
+        const dotsSvg = dataPoints.map((d, i) =>
+            `<circle class="chart-dot" cx="${px(i)}" cy="${py(d.count)}" r="3" data-date="${d.date}" data-count="${d.count}" />`
+        ).join('');
+
+        container.innerHTML =
+            `<svg class="line-chart-svg" viewBox="-48 -8 ${W + 56} ${H + 36}" preserveAspectRatio="none">` +
+            `<defs><linearGradient id="growth-gradient" x1="0" y1="0" x2="0" y2="1">` +
+            `<stop offset="0%" stop-color="var(--accent)" stop-opacity="0.25"/>` +
+            `<stop offset="100%" stop-color="var(--accent)" stop-opacity="0.02"/>` +
+            `</linearGradient></defs>` +
+            gridSvg + yLabelsSvg + xLabelsSvg +
+            `<path class="chart-area" d="${areaPath}" />` +
+            `<polyline class="chart-line" points="${points}" />` +
+            dotsSvg +
+            `</svg>` +
+            `<div class="line-chart-tooltip" id="growth-tooltip"></div>`;
+
+        const tooltip = $id('growth-tooltip');
+        container.querySelectorAll('.chart-dot').forEach((dot) => {
+            dot.addEventListener('mouseenter', (e) => {
+                const date = dot.getAttribute('data-date');
+                const count = dot.getAttribute('data-count');
+                tooltip.textContent = `${date}: ${fmt(Number(count))} listings`;
+                tooltip.style.display = 'block';
+                const rect = container.getBoundingClientRect();
+                const cx = parseFloat(dot.getAttribute('cx')) + 48;
+                tooltip.style.left = cx + 'px';
+                tooltip.style.top = (parseFloat(dot.getAttribute('cy')) - 8) + 'px';
+            });
+            dot.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+            });
+        });
+    }
+
     function renderSourcesTable(sources) {
         const table = $id('sources-table');
         if (!table) return;
@@ -374,6 +461,16 @@
         }
     }
 
+    async function fetchGrowthData() {
+        try {
+            const data = await window.api.request('/stats/growth', { method: 'GET' });
+            clearSectionError('section-growth');
+            renderGrowthChart(data.data_points);
+        } catch {
+            setSectionError('section-growth', 'Error loading growth data — will retry');
+        }
+    }
+
     async function fetchAdminStats() {
         if (!window.api.isAuthenticated()) return;
         try {
@@ -397,7 +494,7 @@
     async function refreshAll() {
         els.lastUpdated.textContent = 'Refreshing...';
         await checkHealth();
-        await fetchPublicStats();
+        await Promise.all([fetchPublicStats(), fetchGrowthData()]);
         await fetchAdminStats();
         els.lastUpdated.textContent = 'Updated ' + fmtTime(new Date());
     }
