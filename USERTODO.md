@@ -13,12 +13,12 @@
 ## Testing Checklist
 
 ### Core Functionality
-- [ ] Saved jobs show posting date (e.g., "Feb 1, 2026") instead of location
-- [ ] Drag handle (≡) appears in top-right of each saved job item
-- [ ] Drag handle changes cursor to "grab" on hover
+- [X] Saved jobs show posting date (e.g., "Feb 1, 2026") instead of location
+- [X] Drag handle (≡) appears in top-right of each saved job item
+- [X] Drag handle changes cursor to "grab" on hover
 - [ ] Can drag items by the handle to reorder
-- [ ] Visual feedback during drag (item becomes semi-transparent)
-- [ ] Blue drop indicator shows above/below items during drag
+- [X] Visual feedback during drag (item becomes semi-transparent)
+- [X] Blue drop indicator shows above/below items during drag
 - [ ] Items reorder visually when dropped
 - [ ] Order persists after page refresh
 - [ ] Order persists after logout/login
