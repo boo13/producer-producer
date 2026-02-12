@@ -175,6 +175,21 @@ class APIClient {
     }
 
     /**
+     * Switch to the next configured API base URL.
+     */
+    switchToNextBaseUrl(currentBaseUrl) {
+        const currentIndex = this.baseUrls.indexOf(currentBaseUrl);
+        if (currentIndex < 0) return false;
+
+        const nextIndex = currentIndex + 1;
+        if (nextIndex >= this.baseUrls.length) return false;
+
+        this.baseUrl = this.baseUrls[nextIndex];
+        this.baseUrlResolved = true;
+        return true;
+    }
+
+    /**
      * Set authentication token
      */
     setToken(token) {
@@ -268,51 +283,65 @@ class APIClient {
     async request(endpoint, options = {}) {
         await this.resolveBaseUrl();
 
-        const url = `${this.baseUrl}${endpoint}`;
-        const headers = {
-            'Content-Type': 'application/json',
-            ...options.headers,
-        };
+        const triedBaseUrls = [];
+        const maxAttempts = Math.max(this.baseUrls.length, 1);
 
-        // Add auth token if available
-        if (this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+            const activeBaseUrl = this.baseUrl;
+            triedBaseUrls.push(activeBaseUrl);
+
+            const url = `${activeBaseUrl}${endpoint}`;
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers,
+            };
+
+            // Add auth token if available
+            if (this.token) {
+                headers['Authorization'] = `Bearer ${this.token}`;
+            }
+
+            const config = {
+                ...options,
+                headers,
+            };
+
+            const { signal, cleanup } = withRequestTimeout(REQUEST_TIMEOUT_MS, config.signal);
+            config.signal = signal;
+
+            try {
+                const response = await fetch(url, config);
+
+                // Handle 401 Unauthorized
+                if (response.status === 401) {
+                    this.logout();
+                    throw new Error('Authentication required. Please log in again.');
+                }
+
+                const data = await this.parseResponseBody(response);
+
+                if (!response.ok) {
+                    throw new Error(this.buildHttpErrorMessage(response, data));
+                }
+
+                return data;
+            } catch (err) {
+                if (!isNetworkError(err)) {
+                    throw err;
+                }
+
+                const switched = this.switchToNextBaseUrl(activeBaseUrl);
+                if (!switched) {
+                    throw new Error(
+                        `Network error while contacting API. Tried: ${triedBaseUrls.join(', ')}.`
+                    );
+                }
+            } finally {
+                cleanup();
+            }
         }
 
-        const config = {
-            ...options,
-            headers,
-        };
-
-        const { signal, cleanup } = withRequestTimeout(REQUEST_TIMEOUT_MS, config.signal);
-        config.signal = signal;
-
-        try {
-            const response = await fetch(url, config);
-
-            // Handle 401 Unauthorized
-            if (response.status === 401) {
-                this.logout();
-                throw new Error('Authentication required. Please log in again.');
-            }
-
-            const data = await this.parseResponseBody(response);
-
-            if (!response.ok) {
-                throw new Error(this.buildHttpErrorMessage(response, data));
-            }
-
-            return data;
-        } catch (err) {
-            if (isNetworkError(err)) {
-                throw new Error(
-                    `Network error while contacting ${this.baseUrl}. Verify API domain, CORS, and connectivity.`
-                );
-            }
-            throw err;
-        } finally {
-            cleanup();
-        }
+        throw new Error(`Network error while contacting API. Tried: ${triedBaseUrls.join(', ')}.`);
     }
 
     /**
