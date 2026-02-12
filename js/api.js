@@ -3,16 +3,102 @@
  * Handles authentication, token management, and API communication
  */
 
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000'
-    : 'https://api.producer-producer.com';
+const DEFAULT_LOCAL_API_BASE_URLS = [
+    'http://localhost:8080',
+    'http://127.0.0.1:8080',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+];
+const DEFAULT_PRODUCTION_API_BASE_URLS = [
+    'https://api.producer-producer.com',
+    'https://producer-producer-api.fly.dev',
+];
+const REQUEST_TIMEOUT_MS = 12000;
+const HEALTHCHECK_TIMEOUT_MS = 2500;
 
 const TOKEN_KEY = 'pp_auth_token';
 const USER_KEY = 'pp_user_data';
 
+function normalizeBaseUrl(value) {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    return trimmed.replace(/\/+$/, '');
+}
+
+function parseConfiguredApiBaseUrls(rawValue) {
+    if (!rawValue) return [];
+
+    if (Array.isArray(rawValue)) {
+        return rawValue.map(normalizeBaseUrl).filter(Boolean);
+    }
+
+    if (typeof rawValue === 'string') {
+        return rawValue
+            .split(',')
+            .map(normalizeBaseUrl)
+            .filter(Boolean);
+    }
+
+    return [];
+}
+
+function unique(values) {
+    return [...new Set(values)];
+}
+
+function getRuntimeConfiguredBaseUrls() {
+    const config = window.__PP_CONFIG__ || {};
+    const metaTagValue = document.querySelector('meta[name="pp-api-base-url"]')?.content;
+
+    return parseConfiguredApiBaseUrls(
+        config.apiBaseUrls || config.apiBaseUrl || window.PP_API_BASE_URLS || window.PP_API_BASE_URL || metaTagValue
+    );
+}
+
+function getApiBaseUrls() {
+    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const defaults = isLocalHost ? DEFAULT_LOCAL_API_BASE_URLS : DEFAULT_PRODUCTION_API_BASE_URLS;
+    const runtimeConfigured = getRuntimeConfiguredBaseUrls();
+    return unique([...runtimeConfigured, ...defaults]);
+}
+
+function isNetworkError(error) {
+    if (!error) return false;
+
+    const name = String(error.name || '');
+    const message = String(error.message || '');
+
+    if (name === 'TypeError' || name === 'AbortError') {
+        return true;
+    }
+
+    return /fetch|network|load failed|failed to fetch/i.test(message);
+}
+
+function withRequestTimeout(timeoutMs, upstreamSignal) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    if (upstreamSignal) {
+        if (upstreamSignal.aborted) {
+            controller.abort();
+        } else {
+            upstreamSignal.addEventListener('abort', () => controller.abort(), { once: true });
+        }
+    }
+
+    return {
+        signal: controller.signal,
+        cleanup: () => clearTimeout(timeoutId),
+    };
+}
+
 class APIClient {
     constructor() {
-        this.baseUrl = API_BASE_URL;
+        this.baseUrls = getApiBaseUrls();
+        this.baseUrl = this.baseUrls[0];
+        this.baseUrlResolved = false;
         this.token = localStorage.getItem(TOKEN_KEY);
         this.user = this.loadUser();
     }
@@ -54,6 +140,17 @@ class APIClient {
     }
 
     /**
+     * Provide API connection diagnostics for UI error reporting.
+     */
+    getNetworkDiagnostics() {
+        return {
+            activeBaseUrl: this.baseUrl,
+            candidateBaseUrls: [...this.baseUrls],
+            baseUrlResolved: this.baseUrlResolved,
+        };
+    }
+
+    /**
      * Set authentication token
      */
     setToken(token) {
@@ -72,9 +169,81 @@ class APIClient {
     }
 
     /**
+     * Select a reachable API host when multiple candidates are configured.
+     */
+    async resolveBaseUrl() {
+        if (this.baseUrlResolved || this.baseUrls.length <= 1) {
+            this.baseUrlResolved = true;
+            return;
+        }
+
+        for (const candidate of this.baseUrls) {
+            const { signal, cleanup } = withRequestTimeout(HEALTHCHECK_TIMEOUT_MS);
+            try {
+                const response = await fetch(`${candidate}/health`, {
+                    method: 'GET',
+                    signal,
+                });
+
+                if (response.ok) {
+                    this.baseUrl = candidate;
+                    this.baseUrlResolved = true;
+                    return;
+                }
+            } catch (_) {
+                // Try the next candidate host.
+            } finally {
+                cleanup();
+            }
+        }
+
+        this.baseUrlResolved = true;
+    }
+
+    /**
+     * Parse response body safely for both JSON and non-JSON responses.
+     */
+    async parseResponseBody(response) {
+        if (response.status === 204) {
+            return null;
+        }
+
+        const contentType = response.headers.get('content-type') || '';
+        const isJson = contentType.includes('application/json');
+
+        if (isJson) {
+            try {
+                return await response.json();
+            } catch (_) {
+                return null;
+            }
+        }
+
+        const text = await response.text();
+        return text || null;
+    }
+
+    /**
+     * Build a user-safe, actionable API error message for non-2xx responses.
+     */
+    buildHttpErrorMessage(response, body) {
+        if (body && typeof body === 'object' && typeof body.detail === 'string') {
+            return body.detail;
+        }
+
+        if (typeof body === 'string' && body.trim()) {
+            return body.trim();
+        }
+
+        return `HTTP ${response.status}: ${response.statusText}`;
+    }
+
+    /**
      * Make HTTP request with error handling
      */
     async request(endpoint, options = {}) {
+        await this.resolveBaseUrl();
+
         const url = `${this.baseUrl}${endpoint}`;
         const headers = {
             'Content-Type': 'application/json',
@@ -91,6 +260,9 @@ class APIClient {
             headers,
         };
 
+        const { signal, cleanup } = withRequestTimeout(REQUEST_TIMEOUT_MS, config.signal);
+        config.signal = signal;
+
         try {
             const response = await fetch(url, config);
 
@@ -100,19 +272,22 @@ class APIClient {
                 throw new Error('Authentication required. Please log in again.');
             }
 
-            // Parse JSON response
-            const data = await response.json();
+            const data = await this.parseResponseBody(response);
 
             if (!response.ok) {
-                throw new Error(data.detail || `HTTP ${response.status}: ${response.statusText}`);
+                throw new Error(this.buildHttpErrorMessage(response, data));
             }
 
             return data;
         } catch (err) {
-            if (err.message.includes('fetch')) {
-                throw new Error('Network error. Please check your connection.');
+            if (isNetworkError(err)) {
+                throw new Error(
+                    `Network error while contacting ${this.baseUrl}. Verify API domain, CORS, and connectivity.`
+                );
             }
             throw err;
+        } finally {
+            cleanup();
         }
     }
 

@@ -1454,6 +1454,32 @@ body {
     transform: translateY(1px);
 }
 
+.login-window .login-diagnostics {
+    border: 2px solid #c75454;
+    border-radius: var(--radius-sm);
+    background: #fff0f0;
+    color: #7b2222;
+    padding: var(--spacing-sm);
+    font-size: 0.75rem;
+    line-height: 1.45;
+}
+
+.login-window .login-diagnostics.is-hidden {
+    display: none;
+}
+
+.login-window .login-diagnostics-title {
+    margin: 0 0 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.login-window .login-diagnostics-summary,
+.login-window .login-diagnostics-details {
+    margin: 0;
+}
+
 /* Settings Window */
 .settings-window {
     position: absolute;
