@@ -101,8 +101,8 @@ class APIClient {
         try {
             const response = await fetch(url, config);
 
-            // Handle 401 Unauthorized
-            if (response.status === 401) {
+            // Handle 401 Unauthorized (only when a token was sent)
+            if (response.status === 401 && this.token) {
                 this.logout();
                 throw new Error('Authentication required. Please log in again.');
             }
@@ -145,6 +145,19 @@ class APIClient {
         this.setToken(data.access_token);
         this.saveUser(data.user);
 
+        return data;
+    }
+
+    /**
+     * Auth: Verify OTP code
+     */
+    async verifyOtpCode(email, code) {
+        const data = await this.request('/auth/verify-code', {
+            method: 'POST',
+            body: JSON.stringify({ email, code }),
+        });
+        this.setToken(data.access_token);
+        this.saveUser(data.user);
         return data;
     }
 

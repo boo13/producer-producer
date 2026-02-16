@@ -1,13 +1,19 @@
 /**
  * Login Module for Producer-Producer v2
- * Handles login modal, magic link requests, and auth button visibility.
+ * Handles login modal with email step and OTP code verification step.
  */
 
 (function() {
     'use strict';
 
-    // DOM elements
+    // Module state
+    let currentEmail = null;
+    let resendCooldownTimer = null;
+    let resendFeedbackTimer = null;
+
+    // DOM elements (email step)
     let loginModal;
+    let loginTitle;
     let loginForm;
     let loginEmailInput;
     let loginNewsletterCheckbox;
@@ -15,17 +21,37 @@
     let loginBtn;
     let loginCloseBtn;
 
+    // DOM elements (OTP step)
+    let otpStep;
+    let otpForm;
+    let otpInput;
+    let otpEmailDisplay;
+    let otpError;
+    let resendBtn;
+    let wrongEmailBtn;
+
     /**
      * Initialize login modal
      */
     function initLoginModal() {
+        // Email step elements
         loginModal = document.getElementById('login-modal');
+        loginTitle = document.getElementById('login-title');
         loginForm = document.getElementById('login-form');
         loginEmailInput = document.getElementById('login-email');
         loginNewsletterCheckbox = document.getElementById('login-newsletter');
         loginError = document.getElementById('login-error');
         loginBtn = document.getElementById('login-btn');
         loginCloseBtn = document.getElementById('login-close');
+
+        // OTP step elements
+        otpStep = document.getElementById('login-otp-step');
+        otpForm = document.getElementById('login-otp-form');
+        otpInput = document.getElementById('login-otp-input');
+        otpEmailDisplay = document.getElementById('login-otp-email');
+        otpError = document.getElementById('login-otp-error');
+        resendBtn = document.getElementById('login-resend');
+        wrongEmailBtn = document.getElementById('login-wrong-email');
 
         if (!loginModal || !loginForm) {
             console.warn('[Login] Modal elements not found');
@@ -49,8 +75,31 @@
             }
         });
 
-        // Form submit -> handle login
+        // Email form submit
         loginForm.addEventListener('submit', handleLoginSubmit);
+
+        // OTP form submit
+        if (otpForm) {
+            otpForm.addEventListener('submit', handleOtpSubmit);
+        }
+
+        // OTP input sanitization + clear error on typing
+        if (otpInput) {
+            otpInput.addEventListener('input', () => {
+                otpInput.value = sanitizeOtpInput(otpInput.value);
+                hideOtpError();
+            });
+        }
+
+        // Resend code
+        if (resendBtn) {
+            resendBtn.addEventListener('click', handleResend);
+        }
+
+        // Wrong email -> back to email step
+        if (wrongEmailBtn) {
+            wrongEmailBtn.addEventListener('click', showEmailStep);
+        }
 
         // Listen for auth changes -> update button visibility
         document.addEventListener('pp:auth-changed', updateLoginButtonVisibility);
@@ -60,19 +109,12 @@
     }
 
     /**
-     * Open login modal
+     * Open login modal (always resets to email step)
      */
     function openLogin() {
         if (!loginModal) return;
 
-        // Clear previous state
-        if (loginForm) loginForm.reset();
-        hideError();
-
-        // Re-check the newsletter checkbox by default
-        if (loginNewsletterCheckbox) {
-            loginNewsletterCheckbox.checked = true;
-        }
+        showEmailStep();
 
         // Show modal
         loginModal.hidden = false;
@@ -89,10 +131,83 @@
     function closeLogin() {
         if (!loginModal) return;
         loginModal.hidden = true;
+        resetState();
     }
 
     /**
-     * Handle login form submission
+     * Reset module state
+     */
+    function resetState() {
+        currentEmail = null;
+        clearCooldownTimer();
+    }
+
+    /**
+     * Show email step, hide OTP step
+     */
+    function showEmailStep() {
+        // Update title for screen readers
+        if (loginTitle) loginTitle.textContent = 'Login';
+
+        // Reset email form
+        if (loginForm) {
+            loginForm.reset();
+            loginForm.hidden = false;
+        }
+        hideError();
+
+        // Re-check newsletter by default
+        if (loginNewsletterCheckbox) {
+            loginNewsletterCheckbox.checked = true;
+        }
+
+        // Hide OTP step
+        if (otpStep) {
+            otpStep.hidden = true;
+        }
+
+        // Reset OTP state
+        if (otpInput) otpInput.value = '';
+        hideOtpError();
+        clearCooldownTimer();
+        currentEmail = null;
+    }
+
+    /**
+     * Show OTP step, hide email form
+     */
+    function showOtpStep(email) {
+        currentEmail = email;
+
+        // Update title for screen readers
+        if (loginTitle) loginTitle.textContent = 'Enter Code';
+
+        // Hide email form
+        if (loginForm) loginForm.hidden = true;
+
+        // Show OTP step
+        if (otpStep) otpStep.hidden = false;
+
+        // Display email
+        if (otpEmailDisplay) otpEmailDisplay.textContent = email;
+
+        // Reset OTP input, errors, and verify button
+        if (otpInput) otpInput.value = '';
+        hideOtpError();
+        const verifyBtn = otpForm?.querySelector('.login__submit');
+        if (verifyBtn) {
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify';
+        }
+
+        // Focus OTP input
+        if (otpInput) {
+            setTimeout(() => otpInput.focus(), 100);
+        }
+    }
+
+    /**
+     * Handle email form submission -- send code, transition to OTP step
      */
     async function handleLoginSubmit(e) {
         e.preventDefault();
@@ -120,27 +235,147 @@
         }
 
         try {
-            // Request magic link
             await window.api.requestMagicLink(email);
 
-            // Show success toast
-            showToast('Magic link sent! Check your email.');
-
-            // Close modal after delay
-            setTimeout(() => {
-                closeLogin();
-            }, 2000);
+            // Transition to OTP step
+            showOtpStep(email);
+            startResendCooldown();
 
         } catch (err) {
-            console.error('[Login] Magic link request failed:', err);
-            showError(err.message || 'Failed to send magic link. Please try again.');
+            console.error('[Login] Code request failed:', err);
+            showError(err.message || 'Failed to send code. Please try again.');
         } finally {
-            // Re-enable submit button
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Send Magic Link';
+                submitBtn.textContent = 'Send Code';
             }
         }
+    }
+
+    /**
+     * Handle OTP form submission -- verify code
+     */
+    async function handleOtpSubmit(e) {
+        e.preventDefault();
+
+        const code = otpInput?.value?.trim();
+        if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
+            showOtpError('Please enter a 6-digit code');
+            return;
+        }
+
+        hideOtpError();
+
+        // Disable verify button (double-submit prevention)
+        const submitBtn = otpForm.querySelector('.login__submit');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Verifying...';
+        }
+
+        try {
+            await window.api.verifyOtpCode(currentEmail, code);
+
+            // Dispatch auth change event
+            if (window.authFunctions?.updateAuthUI) {
+                window.authFunctions.updateAuthUI();
+            }
+
+            // Show success toast
+            showToast('Logged in!');
+
+            // Close modal after brief delay
+            setTimeout(() => {
+                closeLogin();
+            }, 1000);
+
+        } catch (err) {
+            console.error('[Login] OTP verification failed:', err);
+            showOtpError(err.message || 'Verification failed. Please try again.');
+        } finally {
+            // Re-enable button (on error: lets user retry; on success: showOtpStep resets on next open)
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Verify';
+            }
+        }
+    }
+
+    /**
+     * Handle resend code
+     */
+    async function handleResend() {
+        if (!currentEmail) return;
+        if (resendBtn?.classList.contains('login__link--disabled')) return;
+
+        // Disable during request
+        if (resendBtn) {
+            resendBtn.classList.add('login__link--disabled');
+            resendBtn.textContent = 'Sending...';
+        }
+
+        try {
+            await window.api.requestMagicLink(currentEmail);
+            hideOtpError();
+            // Brief feedback
+            if (resendBtn) resendBtn.textContent = 'New code sent';
+            resendFeedbackTimer = setTimeout(() => startResendCooldown(), 1500);
+        } catch (err) {
+            console.error('[Login] Resend failed:', err);
+            showOtpError(err.message || 'Failed to resend code');
+            // Re-enable resend on error
+            if (resendBtn) {
+                resendBtn.classList.remove('login__link--disabled');
+                resendBtn.textContent = 'Resend code';
+            }
+        }
+    }
+
+    /**
+     * Start 60-second resend cooldown
+     */
+    function startResendCooldown() {
+        clearCooldownTimer();
+
+        let secondsLeft = 60;
+        if (resendBtn) {
+            resendBtn.classList.add('login__link--disabled');
+            resendBtn.textContent = `Resend code (${secondsLeft}s)`;
+        }
+
+        resendCooldownTimer = setInterval(() => {
+            secondsLeft--;
+            if (secondsLeft <= 0) {
+                clearCooldownTimer();
+                if (resendBtn) {
+                    resendBtn.classList.remove('login__link--disabled');
+                    resendBtn.textContent = 'Resend code';
+                }
+            } else if (resendBtn) {
+                resendBtn.textContent = `Resend code (${secondsLeft}s)`;
+            }
+        }, 1000);
+    }
+
+    /**
+     * Clear cooldown timer
+     */
+    function clearCooldownTimer() {
+        if (resendFeedbackTimer) {
+            clearTimeout(resendFeedbackTimer);
+            resendFeedbackTimer = null;
+        }
+        if (resendCooldownTimer) {
+            clearInterval(resendCooldownTimer);
+            resendCooldownTimer = null;
+        }
+    }
+
+    /**
+     * Strip non-numeric characters from OTP input
+     */
+    function sanitizeOtpInput(value) {
+        return value.replace(/\D/g, '');
     }
 
     /**
@@ -149,14 +384,13 @@
     function updateLoginButtonVisibility() {
         const isAuthenticated = window.api?.isAuthenticated();
 
-        // Login button: show when NOT authenticated
         if (loginBtn) {
             loginBtn.hidden = isAuthenticated;
         }
     }
 
     /**
-     * Show error message in modal
+     * Show error message in email step
      */
     function showError(message) {
         if (!loginError) return;
@@ -165,7 +399,7 @@
     }
 
     /**
-     * Hide error message
+     * Hide error message in email step
      */
     function hideError() {
         if (!loginError) return;
@@ -174,23 +408,41 @@
     }
 
     /**
+     * Show error message in OTP step
+     */
+    function showOtpError(message) {
+        if (!otpError) return;
+        otpError.textContent = message;
+        otpError.classList.add('login__error--visible');
+    }
+
+    /**
+     * Hide error message in OTP step
+     */
+    function hideOtpError() {
+        if (!otpError) return;
+        otpError.textContent = '';
+        otpError.classList.remove('login__error--visible');
+    }
+
+    /**
      * Show toast notification (reuses undo-toast pattern)
      */
     function showToast(message) {
-        // Remove any existing toast
         const existingToast = document.querySelector('.undo-toast');
         if (existingToast) {
             existingToast.remove();
         }
 
-        // Create toast element
         const toast = document.createElement('div');
         toast.className = 'undo-toast';
-        toast.innerHTML = `<span class="undo-toast__text">${message}</span>`;
+        const span = document.createElement('span');
+        span.className = 'undo-toast__text';
+        span.textContent = message;
+        toast.appendChild(span);
 
         document.body.appendChild(toast);
 
-        // Auto-dismiss after 3 seconds
         setTimeout(() => {
             toast.classList.add('undo-toast--fade');
             setTimeout(() => toast.remove(), 300);
