@@ -9,9 +9,11 @@
     // Module state
     let currentEmail = null;
     let resendCooldownTimer = null;
+    let resendFeedbackTimer = null;
 
     // DOM elements (email step)
     let loginModal;
+    let loginTitle;
     let loginForm;
     let loginEmailInput;
     let loginNewsletterCheckbox;
@@ -34,6 +36,7 @@
     function initLoginModal() {
         // Email step elements
         loginModal = document.getElementById('login-modal');
+        loginTitle = document.getElementById('login-title');
         loginForm = document.getElementById('login-form');
         loginEmailInput = document.getElementById('login-email');
         loginNewsletterCheckbox = document.getElementById('login-newsletter');
@@ -143,6 +146,9 @@
      * Show email step, hide OTP step
      */
     function showEmailStep() {
+        // Update title for screen readers
+        if (loginTitle) loginTitle.textContent = 'Login';
+
         // Reset email form
         if (loginForm) {
             loginForm.reset();
@@ -173,6 +179,9 @@
     function showOtpStep(email) {
         currentEmail = email;
 
+        // Update title for screen readers
+        if (loginTitle) loginTitle.textContent = 'Enter Code';
+
         // Hide email form
         if (loginForm) loginForm.hidden = true;
 
@@ -182,9 +191,14 @@
         // Display email
         if (otpEmailDisplay) otpEmailDisplay.textContent = email;
 
-        // Clear OTP input and errors
+        // Reset OTP input, errors, and verify button
         if (otpInput) otpInput.value = '';
         hideOtpError();
+        const verifyBtn = otpForm?.querySelector('.login__submit');
+        if (verifyBtn) {
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify';
+        }
 
         // Focus OTP input
         if (otpInput) {
@@ -278,18 +292,12 @@
         } catch (err) {
             console.error('[Login] OTP verification failed:', err);
             showOtpError(err.message || 'Verification failed. Please try again.');
-            // Re-enable button on error (preserve entered code per spec)
+        } finally {
+            // Re-enable button (on error: lets user retry; on success: showOtpStep resets on next open)
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Verify';
             }
-            return;
-        }
-
-        // Re-enable on success path too (for next modal open)
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Verify';
         }
     }
 
@@ -308,11 +316,10 @@
 
         try {
             await window.api.requestMagicLink(currentEmail);
-            showOtpError(''); // Clear any existing error
             hideOtpError();
             // Brief feedback
             if (resendBtn) resendBtn.textContent = 'New code sent';
-            setTimeout(() => startResendCooldown(), 1500);
+            resendFeedbackTimer = setTimeout(() => startResendCooldown(), 1500);
         } catch (err) {
             console.error('[Login] Resend failed:', err);
             showOtpError(err.message || 'Failed to resend code');
@@ -354,6 +361,10 @@
      * Clear cooldown timer
      */
     function clearCooldownTimer() {
+        if (resendFeedbackTimer) {
+            clearTimeout(resendFeedbackTimer);
+            resendFeedbackTimer = null;
+        }
         if (resendCooldownTimer) {
             clearInterval(resendCooldownTimer);
             resendCooldownTimer = null;
@@ -425,7 +436,10 @@
 
         const toast = document.createElement('div');
         toast.className = 'undo-toast';
-        toast.innerHTML = `<span class="undo-toast__text">${message}</span>`;
+        const span = document.createElement('span');
+        span.className = 'undo-toast__text';
+        span.textContent = message;
+        toast.appendChild(span);
 
         document.body.appendChild(toast);
 
