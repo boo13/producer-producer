@@ -84,8 +84,27 @@
                         <label class="login__checkbox-label" for="login-newsletter">Subscribe to weekly job digest</label>
                     </div>
                     <div class="login__error" id="login-error"></div>
-                    <button class="login__submit" type="submit">Send Magic Link</button>
+                    <button class="login__submit" type="submit">Send Code</button>
                 </form>
+                <!-- OTP Step (hidden initially) -->
+                <div id="login-otp-step" hidden>
+                    <p class="login__instruction">Enter the 6-digit code sent to <strong id="login-otp-email"></strong></p>
+                    <form id="login-otp-form">
+                        <div class="login__field">
+                            <label class="login__label" for="login-otp-input">Verification Code</label>
+                            <input class="login__input login__input--otp" type="text" id="login-otp-input"
+                                   inputmode="numeric" autocomplete="one-time-code"
+                                   maxlength="6" pattern="[0-9]{6}" placeholder="000000" required>
+                        </div>
+                        <div class="login__error" id="login-otp-error" role="alert"></div>
+                        <button class="login__submit" type="submit">Verify</button>
+                    </form>
+                    <div class="login__otp-actions">
+                        <button class="login__link" id="login-resend" type="button">Resend code</button>
+                        <button class="login__link" id="login-wrong-email" type="button">Wrong email?</button>
+                    </div>
+                    <p class="login__hint">Or check your email for a magic link</p>
+                </div>
             </div>
         </div>
 
