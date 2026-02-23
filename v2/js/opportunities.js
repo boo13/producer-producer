@@ -352,17 +352,13 @@
                 limit: 50,
             });
 
-            // If authenticated, filter out ignored/applied
+            // If authenticated, filter out opportunities the user has already acted on
             if (window.api?.isAuthenticated?.()) {
-                const [ignored, applied] = await Promise.all([
-                    window.api.getUserOpportunities({ status_filter: 'ignored', limit: 100 }),
-                    window.api.getUserOpportunities({ status_filter: 'applied', limit: 100 }),
-                ]);
+                const actedOn = await window.api.getUserOpportunities({ limit: 200 });
 
-                const hiddenIds = new Set([
-                    ...(ignored || []).map((uo) => uo.opportunity_id),
-                    ...(applied || []).map((uo) => uo.opportunity_id),
-                ]);
+                const hiddenIds = new Set(
+                    (actedOn || []).map((uo) => uo.opportunity_id),
+                );
 
                 opportunities = (opportunities || []).filter((opp) => !hiddenIds.has(opp.id));
             }

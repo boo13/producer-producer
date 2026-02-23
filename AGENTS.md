@@ -139,7 +139,7 @@ See `DEPLOYMENT.md` for current deployment checklist details.
 
 ## Maintenance Guardrails
 
-- Do not assume only one app surface exists; changes may need parity across `/`, `/v2/`, and `/stats.html`.
+- **Duplicated modules are the #1 bug source.** `js/` and `v2/js/` have parallel copies of `opportunities.js`, `applications.js`, `api.js`, `auth.js`, and `settings.js`. A fix to one is almost always needed in the other. Always check both.
+- When shipping JS changes, bump the `?v=` cache-bust param in the affected HTML entry points or browsers will serve stale code.
 - Keep auth state flows event-compatible (`pp:auth-changed`) across modules.
-- If changing API contracts, update both API client files and all dependent modules.
 - Preserve the no-build-step constraint unless explicitly planning a tooling migration.
