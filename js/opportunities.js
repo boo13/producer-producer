@@ -64,7 +64,7 @@ async function loadOpportunities() {
 
         // If logged in, hide opportunities the user has already acted on.
         if (window.api.isAuthenticated()) {
-            const actedOn = await window.api.getUserOpportunities({ limit: 200 });
+            const actedOn = await window.api.getUserOpportunities({ limit: 100 });
 
             const hiddenIds = new Set(
                 (actedOn || []).map((uo) => uo.opportunity_id),
