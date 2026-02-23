@@ -62,17 +62,13 @@ async function loadOpportunities() {
             limit: 50,
         });
 
-        // If logged in, hide ignored/applied opportunities.
+        // If logged in, hide opportunities the user has already acted on.
         if (window.api.isAuthenticated()) {
-            const [ignored, applied] = await Promise.all([
-                window.api.getUserOpportunities({ status_filter: 'ignored', limit: 200 }),
-                window.api.getUserOpportunities({ status_filter: 'applied', limit: 200 }),
-            ]);
+            const actedOn = await window.api.getUserOpportunities({ limit: 200 });
 
-            const hiddenIds = new Set([
-                ...(ignored || []).map((uo) => uo.opportunity_id),
-                ...(applied || []).map((uo) => uo.opportunity_id),
-            ]);
+            const hiddenIds = new Set(
+                (actedOn || []).map((uo) => uo.opportunity_id),
+            );
 
             opportunities = (opportunities || []).filter((opp) => !hiddenIds.has(opp.id));
         }
