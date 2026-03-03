@@ -10,8 +10,6 @@ This repo now has three active surfaces:
 2. `v2/index.html` (`/v2/`): mobile-first swipe app ("Tinder for jobs").
 3. `stats.html` (`/stats.html`): ops dashboard for public and admin stats.
 
-The previous AGENTS content only described the legacy desktop app and is no longer sufficient.
-
 ## Architecture
 
 - Frontend stack: vanilla HTML/CSS/JS, no framework, no bundler, no build step.
@@ -117,14 +115,18 @@ Then open:
 - Use `?api=local` in frontend URL when needed.
   - Example: `http://localhost:8080/v2/?api=local`
 
-## Testing
+## Verification
+  - ✅ Use `playwright-cli` terminal commands for browser verification in this repo. (Tell user to install if not available.)
+  - ❌ Do not use MCP Playwright tools (`mcp__playwright__*`).
+  - ❌ Do not substitute with `npx playwright` / `@playwright/test` commands.
 
-Playwright is installed in `devDependencies`.
+  ### Verification rules
 
-- Smoke test file: `tests/playwright-smoke.spec.ts`
-- Agent smoke helper: `tests/agent-smoke.sh`
-
-No robust CI test matrix is defined in this repo yet; tests are primarily smoke/manual workflows.
+  - **Screenshot timing matters:** Before taking verification screenshots, first determine WHEN the animation actually runs (e.g. query for DOM elements the animation creates, check opacity/
+  transform values at multiple timepoints).
+    - Animations on this site can be deferred by `fonts.ready`, `requestAnimationFrame`, or `ctx.add()` — they may not start until 1-2s after page load.
+    - ⚠️ BEWARE - A screenshot taken outside the animation window is a false positive, not proof the fix works.
+  - **Cleanup screenshots:** delete temp screenshots unless user asked to keep them.
 
 ## Deployment and Cache Busting
 
