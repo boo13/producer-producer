@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pp-api-base-url" content="https://producer-producer-api.fly.dev,https://api.producer-producer.com">
+    <title>Producer-Producer Listings</title>
+    <link rel="stylesheet" href="css/list.css?v=20260306">
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-left">
+            <h1 class="header-title">Current Job Listings</h1>
+            <p class="header-subtitle">Public, compact view of all active openings above your score threshold.</p>
+        </div>
+        <div class="header-right">
+            <form class="threshold-form" id="threshold-form">
+                <label for="min-score">Min Rating</label>
+                <input type="number" id="min-score" min="0" max="100" step="1" value="70">
+                <button type="submit" class="btn btn-primary" id="threshold-submit">Apply</button>
+            </form>
+            <button type="button" class="btn" id="refresh-btn">Refresh</button>
+        </div>
+    </header>
+
+    <div class="status-bar">
+        <span class="connection-indicator" id="connection-indicator">
+            <span class="indicator-dot"></span>
+            <span class="indicator-text">Checking...</span>
+            <span class="latency-text" id="latency-text"></span>
+        </span>
+        <span class="results-caption" id="results-caption">Loading listings...</span>
+        <span class="last-updated" id="last-updated">—</span>
+    </div>
+
+    <div class="error-banner is-hidden" id="error-banner"></div>
+
+    <main class="listings-page">
+        <section class="summary-cards">
+            <article class="summary-card">
+                <p class="summary-label">Listings</p>
+                <p class="summary-value" id="summary-total">—</p>
+            </article>
+            <article class="summary-card">
+                <p class="summary-label">Companies</p>
+                <p class="summary-value" id="summary-companies">—</p>
+            </article>
+            <article class="summary-card">
+                <p class="summary-label">New (24h)</p>
+                <p class="summary-value" id="summary-new">—</p>
+            </article>
+        </section>
+
+        <section class="company-list" id="company-list" aria-live="polite">
+            <p class="loading-state" id="loading-state">Loading listings...</p>
+        </section>
+    </main>
+
+    <script src="js/api.js?v=20260212"></script>
+    <script src="js/list.js?v=20260306"></script>
+</body>
+
+</html>
