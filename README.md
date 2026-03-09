@@ -2,10 +2,10 @@
 
 [www.producer-producer.com](https://www.producer-producer.com)
 
-## Job opportunities from 56 companies:
+## Job opportunities from 57 companies:
 
 **Media & News**
-A24, Axios, BBC / BBC Studios, Bloomberg, BuzzFeed, Bustle Digital Group, Complex Networks, Condé Nast, Crooked Media, Dow Jones, Financial Times, Forbes Advisor, Fox Corporation, Insider, Morning Brew, NPR, Politico, Semafor, TED, The Economist Group, The New York Times, The Washington Post, Thomson Reuters, Vox Media
+A24, Axios, BBC / BBC Studios, Bloomberg, BuzzFeed, Bustle Digital Group, Complex Networks, Condé Nast, Crooked Media, Dow Jones, Financial Times, Forbes Advisor, Fox Corporation, Insider, Morning Brew, NPR, Politico, Semafor, TED, The Atlantic, The Economist Group, The New York Times, The Washington Post, Thomson Reuters, Vox Media
 
 **Entertainment & Studios**
 Disney, NBCUniversal, Netflix, Paramount, Sony Pictures, Warner Bros Discovery, Warner Music Group
