@@ -43,7 +43,7 @@
         const g = Math.round(200 + (117 - 200) * t);
         const b = Math.round(158 + (20  - 158) * t);
         const bg = `rgb(${r},${g},${b})`;
-        const color = score >= 83 ? '#fef5e0' : '#3d2200';
+        const color = '#fef5e0';
         return { background: bg, color };
     }
 
@@ -56,7 +56,7 @@
             `height:${h}px;overflow:hidden;opacity:1;` +
             'transition:height 400ms cubic-bezier(0.25,0.46,0.45,0.94),opacity 280ms ease 60ms';
         detailEl._animTimer = setTimeout(() => {
-            detailEl.style.cssText = 'height:auto';
+            detailEl.style.cssText = 'height:auto;overflow:visible;opacity:1';
         }, 410);
     }
 
