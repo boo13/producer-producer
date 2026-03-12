@@ -5,61 +5,142 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="pp-api-base-url" content="https://producer-producer-api.fly.dev,https://api.producer-producer.com">
-    <title>Producer-Producer Listings</title>
-    <link rel="stylesheet" href="css/list.css?v=20260306">
+    <title>Producer-Producer — Curated Media Jobs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="css/list.css?v=20260311">
 </head>
 
 <body>
-    <header class="header">
-        <div class="header-left">
-            <h1 class="header-title">Current Job Listings</h1>
-            <p class="header-subtitle">Public, compact view of all active openings above your score threshold.</p>
+
+    <!-- Grid overlay — revealed with Cmd-Shift-G -->
+    <div class="grid-overlay" id="grid-overlay" aria-hidden="true">
+        <div class="grid-overlay-track">
+            <div class="grid-col-marker"></div>
+            <div class="grid-col-marker"></div>
+            <div class="grid-col-marker"></div>
+            <div class="grid-col-marker"></div>
+            <div class="grid-col-marker"></div>
+            <div class="grid-col-marker"></div>
+            <div class="grid-col-marker"></div>
+            <div class="grid-col-marker"></div>
+            <div class="grid-col-marker"></div>
+            <div class="grid-col-marker"></div>
+            <div class="grid-col-marker"></div>
+            <div class="grid-col-marker"></div>
         </div>
-        <div class="header-right">
-            <form class="threshold-form" id="threshold-form">
-                <label for="min-score">Min Rating</label>
-                <input type="number" id="min-score" min="0" max="100" step="1" value="70">
-                <button type="submit" class="btn btn-primary" id="threshold-submit">Apply</button>
-            </form>
-            <button type="button" class="btn" id="refresh-btn">Refresh</button>
+    </div>
+
+    <header class="header">
+        <div class="header-inner">
+            <a class="site-wordmark" href="/">Producer-Producer</a>
         </div>
     </header>
 
     <div class="status-bar">
-        <span class="connection-indicator" id="connection-indicator">
-            <span class="indicator-dot"></span>
-            <span class="indicator-text">Checking...</span>
-            <span class="latency-text" id="latency-text"></span>
-        </span>
-        <span class="results-caption" id="results-caption">Loading listings...</span>
-        <span class="last-updated" id="last-updated">—</span>
+        <div class="status-bar-inner">
+            <span class="connection-indicator" id="connection-indicator">
+                <span class="indicator-dot"></span>
+                <span class="indicator-text">Checking...</span>
+                <span class="latency-text" id="latency-text"></span>
+            </span>
+            <span class="results-group">
+                <span class="results-caption" id="results-caption">Loading listings...</span>
+                <button type="button" class="btn-refresh" id="refresh-btn">↻</button>
+            </span>
+            <span class="last-updated" id="last-updated">—</span>
+        </div>
     </div>
 
     <div class="error-banner is-hidden" id="error-banner"></div>
 
     <main class="listings-page">
-        <section class="summary-cards">
-            <article class="summary-card">
-                <p class="summary-label">Listings</p>
-                <p class="summary-value" id="summary-total">—</p>
-            </article>
-            <article class="summary-card">
-                <p class="summary-label">Companies</p>
-                <p class="summary-value" id="summary-companies">—</p>
-            </article>
-            <article class="summary-card">
-                <p class="summary-label">New (24h)</p>
-                <p class="summary-value" id="summary-new">—</p>
-            </article>
+
+        <section class="site-intro">
+            <h1 class="intro-brand">The Job Board<br>for Media Producers.</h1>
+            <span class="intro-rule"></span>
+            <p class="intro-tagline">Every listing scored. Only the best ones shown.</p>
+            <p class="intro-body">Producer-Producer aggregates job openings from newsrooms, podcast studios, documentary houses, and digital publishers — then scores each one with our proprietary algorithm. Roles are ranked by score so the most relevant opportunities surface first. No noise, no recruiter spam. Just the gigs worth your time.</p>
+
+            <form class="newsletter-form" id="newsletter-form" novalidate>
+                <p class="newsletter-label">Get new listings by email</p>
+                <div class="newsletter-fields">
+                    <input type="email" class="newsletter-email" id="newsletter-email" placeholder="your@email.com" autocomplete="email" required>
+                    <button type="submit" class="newsletter-submit">Subscribe</button>
+                </div>
+                <p class="newsletter-status is-hidden" id="newsletter-status"></p>
+            </form>
+        </section>
+
+        <section class="featured-companies" id="featured-companies">
+            <h2 class="section-label">Hiring now at</h2>
+            <div class="company-track" id="company-track">
+                <!-- Populated by JS -->
+                <span class="company-placeholder">Loading companies...</span>
+            </div>
+        </section>
+
+        <section class="filter-bar">
+            <form class="threshold-form" id="threshold-form">
+                <div class="filter-group">
+                    <label for="min-score" class="filter-label">Min. Score</label>
+                    <div class="slider-container">
+                        <input type="range" id="min-score" min="0" max="100" step="1" value="75" class="score-slider">
+                        <span class="score-value" id="score-value">75</span>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <span class="filter-label">Categories</span>
+                    <div class="category-chips" id="category-chips">
+                        <button type="button" class="chip is-active" data-category="all">All</button>
+                        <button type="button" class="chip" data-category="news">News</button>
+                        <button type="button" class="chip" data-category="podcast">Podcast</button>
+                        <button type="button" class="chip" data-category="video">Video</button>
+                        <button type="button" class="chip" data-category="social">Social</button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section class="summary-stats">
+            <div class="stat-item">
+                <span class="stat-value" id="summary-total">—</span>
+                <span class="stat-label">Listings</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="summary-companies">—</span>
+                <span class="stat-label">Companies</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="summary-new">—</span>
+                <span class="stat-label">New today</span>
+            </div>
         </section>
 
         <section class="company-list" id="company-list" aria-live="polite">
-            <p class="loading-state" id="loading-state">Loading listings...</p>
+            <div class="skeleton-list" id="skeleton-list">
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item"></div>
+            </div>
         </section>
     </main>
 
     <script src="js/api.js?v=20260212"></script>
-    <script src="js/list.js?v=20260306"></script>
+    <script src="js/list.js?v=20260311"></script>
+    <script>
+        (function () {
+            document.addEventListener('keydown', function (e) {
+                if (e.metaKey && e.shiftKey && e.code === 'KeyG') {
+                    e.preventDefault();
+                    var overlay = document.getElementById('grid-overlay');
+                    if (overlay) overlay.classList.toggle('is-visible');
+                }
+            });
+        })();
+    </script>
 </body>
 
 </html>

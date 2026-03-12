@@ -1,13 +1,14 @@
 (function () {
     'use strict';
 
-    const DEFAULT_MIN_SCORE = 70;
+    const DEFAULT_MIN_SCORE = 75;
     const PAGE_SIZE = 100;
     const MAX_PAGES = 50;
     const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
 
     const state = {
         minScore: DEFAULT_MIN_SCORE,
+        category: 'all',
         listings: [],
     };
 
@@ -16,7 +17,8 @@
     const els = {
         thresholdForm: $id('threshold-form'),
         minScoreInput: $id('min-score'),
-        thresholdSubmit: $id('threshold-submit'),
+        scoreValue: $id('score-value'),
+        categoryChips: $id('category-chips'),
         refreshBtn: $id('refresh-btn'),
         connectionIndicator: $id('connection-indicator'),
         latencyText: $id('latency-text'),
@@ -27,7 +29,51 @@
         summaryCompanies: $id('summary-companies'),
         summaryNew: $id('summary-new'),
         companyList: $id('company-list'),
+        companyTrack: $id('company-track'),
+        skeletonList: $id('skeleton-list'),
+        newsletterForm: $id('newsletter-form'),
+        newsletterEmail: $id('newsletter-email'),
+        newsletterStatus: $id('newsletter-status'),
     };
+
+    function scoreStyles(score) {
+        // Interpolate bg from muted tan (score 0) to amber (score 100)
+        const t = Math.max(0, Math.min(1, score / 100));
+        const r = Math.round(220 + (184 - 220) * t);
+        const g = Math.round(200 + (117 - 200) * t);
+        const b = Math.round(158 + (20  - 158) * t);
+        const bg = `rgb(${r},${g},${b})`;
+        const color = score >= 83 ? '#fef5e0' : '#3d2200';
+        return { background: bg, color };
+    }
+
+    function animateDetailOpen(detailEl) {
+        clearTimeout(detailEl._animTimer);
+        detailEl.style.cssText = 'height:0;overflow:hidden;opacity:0;transition:none';
+        void detailEl.offsetHeight;
+        const h = detailEl.scrollHeight;
+        detailEl.style.cssText =
+            `height:${h}px;overflow:hidden;opacity:1;` +
+            'transition:height 400ms cubic-bezier(0.25,0.46,0.45,0.94),opacity 280ms ease 60ms';
+        detailEl._animTimer = setTimeout(() => {
+            detailEl.style.cssText = 'height:auto';
+        }, 410);
+    }
+
+    function animateDetailClose(detailsEl, detailEl, onDone) {
+        clearTimeout(detailEl._animTimer);
+        const h = detailEl.scrollHeight || detailEl.offsetHeight;
+        detailEl.style.cssText = `height:${h}px;overflow:hidden;opacity:1;transition:none`;
+        void detailEl.offsetHeight;
+        detailEl.style.cssText =
+            `height:0;overflow:hidden;opacity:0;` +
+            'transition:height 340ms cubic-bezier(0.25,0.46,0.45,0.94),opacity 200ms ease';
+        detailEl._animTimer = setTimeout(() => {
+            detailsEl.open = false;
+            detailEl.style.cssText = '';
+            if (onDone) onDone();
+        }, 350);
+    }
 
     function clampScore(value) {
         const num = Number(value);
@@ -145,14 +191,16 @@
     }
 
     function setLoading(isLoading) {
-        if (els.thresholdSubmit) {
-            els.thresholdSubmit.disabled = isLoading;
-        }
-        if (els.refreshBtn) {
-            els.refreshBtn.disabled = isLoading;
-        }
-        if (isLoading && els.companyList) {
-            els.companyList.innerHTML = '<p class="loading-state">Loading listings...</p>';
+        if (els.minScoreInput) els.minScoreInput.disabled = isLoading;
+        if (els.refreshBtn) els.refreshBtn.disabled = isLoading;
+        
+        if (isLoading) {
+            if (els.skeletonList) els.skeletonList.classList.remove('is-hidden');
+            // Don't clear companyList immediately to avoid layout shift if possible, 
+            // but for a clean "refresh" state we might want to.
+            // For now, let's just show skeleton.
+        } else {
+            if (els.skeletonList) els.skeletonList.classList.add('is-hidden');
         }
     }
 
@@ -204,37 +252,13 @@
 
     function sortListings(listings) {
         return [...listings].sort((a, b) => {
-            const companyA = (a.company_name || 'Unknown Company').toLowerCase();
-            const companyB = (b.company_name || 'Unknown Company').toLowerCase();
-            if (companyA !== companyB) {
-                return companyA.localeCompare(companyB);
-            }
-
             const scoreDelta = (b.score || 0) - (a.score || 0);
-            if (scoreDelta !== 0) {
-                return scoreDelta;
-            }
+            if (scoreDelta !== 0) return scoreDelta;
 
             const timeA = new Date(a.first_seen || a.posted_date || 0).getTime() || 0;
             const timeB = new Date(b.first_seen || b.posted_date || 0).getTime() || 0;
             return timeB - timeA;
         });
-    }
-
-    function groupByCompany(listings) {
-        const groups = new Map();
-
-        listings.forEach((opp) => {
-            const company = (opp.company_name || 'Unknown Company').trim() || 'Unknown Company';
-            if (!groups.has(company)) {
-                groups.set(company, []);
-            }
-            groups.get(company).push(opp);
-        });
-
-        return [...groups.entries()].sort(([a], [b]) =>
-            a.localeCompare(b, undefined, { sensitivity: 'base' })
-        );
     }
 
     function createListingElement(opportunity, allDetails) {
@@ -244,8 +268,21 @@
         const summary = document.createElement('summary');
         summary.className = 'listing-summary';
 
-        const summaryLeft = document.createElement('div');
-        summaryLeft.className = 'summary-left';
+        const scoreBadge = document.createElement('div');
+        scoreBadge.className = 'score-badge';
+        const { background: scoreBg, color: scoreColor } = scoreStyles(opportunity.score || 0);
+        scoreBadge.style.background = scoreBg;
+        scoreBadge.style.color = scoreColor;
+        const scoreNum = document.createElement('span');
+        scoreNum.textContent = Math.round(opportunity.score || 0);
+        const scoreLabel = document.createElement('span');
+        scoreLabel.className = 'score-badge-label';
+        scoreLabel.textContent = 'score';
+        scoreBadge.appendChild(scoreNum);
+        scoreBadge.appendChild(scoreLabel);
+
+        const info = document.createElement('div');
+        info.className = 'listing-info';
 
         const role = document.createElement('p');
         role.className = 'listing-role';
@@ -255,41 +292,42 @@
         company.className = 'listing-company';
         company.textContent = opportunity.company_name || 'Unknown Company';
 
-        summaryLeft.appendChild(role);
-        summaryLeft.appendChild(company);
+        info.appendChild(role);
+        info.appendChild(company);
 
-        const summaryRight = document.createElement('div');
-        summaryRight.className = 'summary-right';
+        const pills = document.createElement('div');
+        pills.className = 'listing-pills';
+        info.appendChild(pills);
 
-        const salary = document.createElement('span');
-        salary.className = 'listing-salary';
-        salary.textContent = formatSalary(opportunity.salary_min, opportunity.salary_max, opportunity.salary_raw);
-
-        const score = document.createElement('span');
-        score.className = 'listing-score';
-        score.textContent = `Score ${(opportunity.score || 0).toFixed(1)}`;
-
-        summaryRight.appendChild(salary);
+        const aside = document.createElement('div');
+        aside.className = 'listing-aside';
 
         if (isNewListing(opportunity)) {
             const newPill = document.createElement('span');
             newPill.className = 'pill-new';
             newPill.textContent = 'NEW';
-            summaryRight.appendChild(newPill);
+            aside.appendChild(newPill);
         }
 
-        summaryRight.appendChild(score);
+        const salary = document.createElement('span');
+        salary.className = 'listing-salary';
+        salary.textContent = formatSalary(opportunity.salary_min, opportunity.salary_max, opportunity.salary_raw);
+        aside.appendChild(salary);
 
         const chevron = document.createElement('span');
         chevron.className = 'summary-chevron';
         chevron.textContent = '›';
-        summaryRight.appendChild(chevron);
+        aside.appendChild(chevron);
 
-        summary.appendChild(summaryLeft);
-        summary.appendChild(summaryRight);
+        summary.appendChild(scoreBadge);
+        summary.appendChild(info);
+        summary.appendChild(aside);
 
         const detail = document.createElement('div');
         detail.className = 'listing-detail';
+
+        const detailInner = document.createElement('div');
+        detailInner.className = 'listing-detail-inner';
 
         const postedDate = opportunity.posted_date || opportunity.first_seen;
         const postedMeta = document.createElement('p');
@@ -305,7 +343,7 @@
 
         const applyLink = document.createElement('a');
         applyLink.className = 'apply-btn';
-        applyLink.textContent = 'APPLY';
+        applyLink.textContent = 'Apply';
 
         if (opportunity.url) {
             applyLink.href = opportunity.url;
@@ -314,25 +352,34 @@
         } else {
             applyLink.classList.add('is-disabled');
             applyLink.removeAttribute('href');
-            applyLink.textContent = 'APPLY unavailable';
+            applyLink.textContent = 'No link available';
         }
 
         actions.appendChild(applyLink);
-        detail.appendChild(postedMeta);
-        detail.appendChild(description);
-        detail.appendChild(actions);
+        detailInner.appendChild(postedMeta);
+        detailInner.appendChild(description);
+        detailInner.appendChild(actions);
+        detail.appendChild(detailInner);
 
         details.appendChild(summary);
         details.appendChild(detail);
 
-        details.addEventListener('toggle', () => {
-            if (!details.open) return;
-
-            allDetails.forEach((item) => {
-                if (item !== details) {
-                    item.open = false;
-                }
-            });
+        summary.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (details.open) {
+                details.open = false;
+                animateDetailClose(details, detail);
+            } else {
+                allDetails.forEach((item) => {
+                    if (item !== details && item.open) {
+                        const otherDetail = item.querySelector('.listing-detail');
+                        if (otherDetail) animateDetailClose(item, otherDetail);
+                        item.open = false;
+                    }
+                });
+                details.open = true;
+                animateDetailOpen(detail);
+            }
         });
 
         return details;
@@ -345,15 +392,10 @@
         ).size;
         const newCount = state.listings.filter(isNewListing).length;
 
-        if (els.summaryTotal) {
-            els.summaryTotal.textContent = fmtInteger(totalListings);
-        }
-        if (els.summaryCompanies) {
-            els.summaryCompanies.textContent = fmtInteger(companyCount);
-        }
-        if (els.summaryNew) {
-            els.summaryNew.textContent = fmtInteger(newCount);
-        }
+        if (els.summaryTotal) els.summaryTotal.textContent = fmtInteger(totalListings);
+        if (els.summaryCompanies) els.summaryCompanies.textContent = fmtInteger(companyCount);
+        if (els.summaryNew) els.summaryNew.textContent = fmtInteger(newCount);
+        
         if (els.resultsCaption) {
             if (totalListings === 0) {
                 els.resultsCaption.textContent = `No active listings found at score ${state.minScore}+`;
@@ -364,51 +406,69 @@
         }
     }
 
+    function renderFeaturedCompanies() {
+        if (!els.companyTrack) return;
+        
+        // Pick top companies from currently loaded listings
+        const counts = {};
+        state.listings.forEach(opp => {
+            const name = (opp.company_name || '').trim();
+            if (!name) return;
+            counts[name] = (counts[name] || 0) + 1;
+        });
+
+        const sorted = Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8);
+
+        if (sorted.length === 0) {
+            els.companyTrack.innerHTML = '<span class="company-placeholder">New listings daily.</span>';
+            return;
+        }
+
+        els.companyTrack.innerHTML = '';
+        sorted.forEach(([name]) => {
+            const span = document.createElement('span');
+            span.className = 'company-logo-text';
+            span.textContent = name;
+            els.companyTrack.appendChild(span);
+        });
+    }
+
     function renderListings() {
         if (!els.companyList) return;
-        els.companyList.innerHTML = '';
+        
+        // Clear previous results but keep skeleton if it's there
+        const listings = els.companyList.querySelectorAll('.listing-item, .empty-state');
+        listings.forEach(l => l.remove());
 
-        if (state.listings.length === 0) {
+        const filtered = state.listings.filter(opp => {
+            if (state.category === 'all') return true;
+            const desc = (opp.description || '').toLowerCase();
+            const title = (opp.title || '').toLowerCase();
+            const text = `${title} ${desc}`;
+            
+            if (state.category === 'news') return text.includes('news') || text.includes('journal');
+            if (state.category === 'podcast') return text.includes('podcast') || text.includes('audio');
+            if (state.category === 'video') return text.includes('video') || text.includes('film') || text.includes('documentary');
+            if (state.category === 'social') return text.includes('social') || text.includes('tiktok') || text.includes('instagram');
+            return true;
+        });
+
+        if (filtered.length === 0) {
             const empty = document.createElement('p');
             empty.className = 'empty-state';
-            empty.textContent = 'No listings match this threshold right now.';
+            empty.textContent = 'No listings match these filters right now.';
             els.companyList.appendChild(empty);
             return;
         }
 
-        const grouped = groupByCompany(state.listings);
         const allDetails = [];
-
-        grouped.forEach(([companyName, opportunities]) => {
-            const section = document.createElement('section');
-            section.className = 'company-group';
-
-            const header = document.createElement('header');
-            header.className = 'company-header';
-
-            const title = document.createElement('h2');
-            title.className = 'company-name';
-            title.textContent = companyName;
-
-            const count = document.createElement('span');
-            count.className = 'company-count';
-            count.textContent = `${opportunities.length} listing${opportunities.length === 1 ? '' : 's'}`;
-
-            header.appendChild(title);
-            header.appendChild(count);
-
-            const list = document.createElement('div');
-            list.className = 'company-listings';
-
-            opportunities.forEach((opportunity) => {
-                const listing = createListingElement(opportunity, allDetails);
-                allDetails.push(listing);
-                list.appendChild(listing);
-            });
-
-            section.appendChild(header);
-            section.appendChild(list);
-            els.companyList.appendChild(section);
+        filtered.forEach((opportunity, index) => {
+            const listing = createListingElement(opportunity, allDetails);
+            listing.style.animationDelay = `${Math.min(index * 25, 350)}ms`;
+            allDetails.push(listing);
+            els.companyList.appendChild(listing);
         });
     }
 
@@ -425,6 +485,7 @@
             const listings = await fetchAllListings(state.minScore);
             state.listings = sortListings(listings);
             renderListings();
+            renderFeaturedCompanies();
             updateSummary();
             if (els.lastUpdated) {
                 els.lastUpdated.textContent = `Updated ${fmtDateTime(new Date())}`;
@@ -442,21 +503,56 @@
     }
 
     function bindEvents() {
-        els.thresholdForm?.addEventListener('submit', (event) => {
-            event.preventDefault();
-            const nextScore = clampScore(els.minScoreInput?.value);
-            if (els.minScoreInput) {
-                els.minScoreInput.value = String(nextScore);
-            }
-            if (nextScore !== state.minScore) {
-                state.minScore = nextScore;
-                updateMinScoreInUrl(state.minScore);
-            }
+        els.minScoreInput?.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (els.scoreValue) els.scoreValue.textContent = val;
+        });
+
+        els.minScoreInput?.addEventListener('change', (e) => {
+            state.minScore = clampScore(e.target.value);
+            updateMinScoreInUrl(state.minScore);
             loadListings();
+        });
+
+        els.categoryChips?.addEventListener('click', (e) => {
+            const chip = e.target.closest('.chip');
+            if (!chip) return;
+
+            const category = chip.dataset.category;
+            if (category === state.category) return;
+
+            state.category = category;
+            
+            // Update active state
+            els.categoryChips.querySelectorAll('.chip').forEach(c => c.classList.remove('is-active'));
+            chip.classList.add('is-active');
+            
+            renderListings();
         });
 
         els.refreshBtn?.addEventListener('click', () => {
             loadListings();
+        });
+
+        els.newsletterForm?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const email = els.newsletterEmail?.value?.trim();
+            if (!email || !els.newsletterStatus) return;
+
+            const submitBtn = els.newsletterForm.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+
+            try {
+                await window.api.requestMagicLink(email);
+                els.newsletterStatus.textContent = 'Check your inbox — a confirmation link is on its way.';
+                els.newsletterStatus.className = 'newsletter-status newsletter-status--success';
+                if (els.newsletterEmail) els.newsletterEmail.value = '';
+            } catch {
+                els.newsletterStatus.textContent = 'Something went wrong. Please try again.';
+                els.newsletterStatus.className = 'newsletter-status newsletter-status--error';
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
         });
     }
 
@@ -464,6 +560,7 @@
         state.minScore = getInitialMinScore();
         if (els.minScoreInput) {
             els.minScoreInput.value = String(state.minScore);
+            if (els.scoreValue) els.scoreValue.textContent = String(state.minScore);
         }
         updateMinScoreInUrl(state.minScore);
         bindEvents();
