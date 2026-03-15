@@ -9,9 +9,12 @@
     const state = {
         minScore: DEFAULT_MIN_SCORE,
         category: 'all',
+        statusFilter: 'all',
         listings: [],
         pendingAuthEmail: null,
     };
+
+    var ignoredIds = new Set();
 
     const $id = (id) => document.getElementById(id);
 
@@ -228,6 +231,19 @@
     }
 
     async function fetchAllListings(minScore) {
+        if (state.statusFilter && state.statusFilter !== 'all' && window.api.isAuthenticated()) {
+            // Use for-me endpoint with status filter
+            var statusMap = { saved: 'todo', applied: 'applied' };
+            var params = {
+                min_score: minScore,
+                status_filter: statusMap[state.statusFilter],
+                limit: PAGE_SIZE,
+            };
+            var results = await window.api.getOpportunitiesForMe(params);
+            return results || [];
+        }
+
+        // Public feed pagination
         const items = [];
 
         for (let page = 0; page < MAX_PAGES; page += 1) {
@@ -323,6 +339,9 @@
                 listingEl.style.overflow = 'hidden';
             });
         }
+
+        // Track ignored id for client-side filtering in All Jobs view
+        ignoredIds.add(opportunity.id);
 
         // Clear any existing undo timer (previous ignore becomes permanent)
         if (undoState.timer) {
@@ -607,11 +626,14 @@
         listings.forEach(l => l.remove());
 
         const filtered = state.listings.filter(opp => {
+            // In All Jobs view, hide client-side ignored entries
+            if (state.statusFilter === 'all' && ignoredIds.has(opp.id)) return false;
+
             if (state.category === 'all') return true;
             const desc = (opp.description || '').toLowerCase();
             const title = (opp.title || '').toLowerCase();
             const text = `${title} ${desc}`;
-            
+
             if (state.category === 'news') return text.includes('news') || text.includes('journal');
             if (state.category === 'podcast') return text.includes('podcast') || text.includes('audio');
             if (state.category === 'video') return text.includes('video') || text.includes('film') || text.includes('documentary');
@@ -698,6 +720,19 @@
             loadListings();
         });
 
+        document.getElementById('status-chips').addEventListener('click', function(e) {
+            var chip = e.target.closest('.chip');
+            if (!chip) return;
+
+            document.querySelectorAll('#status-chips .chip').forEach(function(c) {
+                c.classList.remove('is-active');
+            });
+            chip.classList.add('is-active');
+
+            state.statusFilter = chip.getAttribute('data-status');
+            loadListings();
+        });
+
         els.newsletterForm?.addEventListener('submit', async (event) => {
             event.preventDefault();
             const email = els.newsletterEmail?.value?.trim();
@@ -749,6 +784,15 @@
             newsletterForm.classList.add('is-hidden');
         } else {
             newsletterForm.classList.remove('is-hidden');
+        }
+
+        // Toggle status filter chips visibility
+        var statusGroup = document.getElementById('status-filter-group');
+        if (isAuth) {
+            statusGroup.classList.remove('is-hidden');
+        } else {
+            statusGroup.classList.add('is-hidden');
+            state.statusFilter = 'all';
         }
     });
 
