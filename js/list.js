@@ -262,6 +262,53 @@
         });
     }
 
+    function renderDescription(opportunity, container) {
+        var classifications = opportunity.sentence_classifications;
+
+        if (!classifications || !classifications.length) {
+            // Fallback: render raw description at normal tier
+            var p = document.createElement('p');
+            p.className = 'listing-description tier-normal';
+            p.textContent = opportunity.description_cleaned || opportunity.description || '';
+            container.appendChild(p);
+            return;
+        }
+
+        // Group consecutive sentences by tier for cleaner rendering
+        var groups = [];
+        var currentGroup = null;
+
+        classifications.forEach(function(item) {
+            if (currentGroup && currentGroup.tier === item.tier) {
+                currentGroup.sentences.push(item.text);
+            } else {
+                currentGroup = { tier: item.tier, sentences: [item.text] };
+                groups.push(currentGroup);
+            }
+        });
+
+        groups.forEach(function(group) {
+            var p = document.createElement('p');
+            p.className = 'listing-description';
+
+            if (group.tier === 'highlight') {
+                // Each highlighted sentence gets its own span for the marker effect
+                group.sentences.forEach(function(sentence, i) {
+                    if (i > 0) p.appendChild(document.createTextNode(' '));
+                    var span = document.createElement('span');
+                    span.className = 'tier-highlight';
+                    span.textContent = sentence;
+                    p.appendChild(span);
+                });
+            } else {
+                p.classList.add('tier-' + group.tier.replace('_', '-'));
+                p.textContent = group.sentences.join(' ');
+            }
+
+            container.appendChild(p);
+        });
+    }
+
     function createListingElement(opportunity, allDetails) {
         const details = document.createElement('details');
         details.className = 'listing-item';
@@ -335,10 +382,6 @@
         postedMeta.className = 'listing-meta';
         postedMeta.textContent = `Posted ${fmtDate(postedDate)} · First seen ${fmtDate(opportunity.first_seen)}`;
 
-        const description = document.createElement('p');
-        description.className = 'listing-description';
-        description.textContent = normalizeDescription(opportunity.description);
-
         const actions = document.createElement('div');
         actions.className = 'listing-actions';
 
@@ -358,7 +401,7 @@
 
         actions.appendChild(applyLink);
         detailInner.appendChild(postedMeta);
-        detailInner.appendChild(description);
+        renderDescription(opportunity, detailInner);
         detailInner.appendChild(actions);
         detail.appendChild(detailInner);
 
