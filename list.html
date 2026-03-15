@@ -144,7 +144,7 @@
 
     <script src="js/api.js?v=20260212"></script>
     <script src="js/auth.js?v=20260314"></script>
-    <script src="js/list.js?v=20260311"></script>
+    <script src="js/list.js?v=20260315"></script>
     <script>
         (function () {
             document.addEventListener('keydown', function (e) {
@@ -156,6 +156,11 @@
             });
         })();
     </script>
+
+    <div class="undo-toast is-hidden" id="undo-toast">
+        <span class="undo-toast-text" id="undo-toast-text"></span>
+        <button type="button" class="undo-toast-btn" id="undo-toast-btn">Undo</button>
+    </div>
 </body>
 
 </html>

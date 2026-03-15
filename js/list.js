@@ -309,9 +309,66 @@
         });
     }
 
+    var undoState = { timer: null, opportunityId: null, element: null };
+
     function ignoreOpportunity(opportunity) {
-        console.log('Ignore:', opportunity.id); // Placeholder for Task 5
+        // Find and animate out the listing element
+        var listingEl = document.querySelector('[data-opportunity-id="' + opportunity.id + '"]');
+        if (listingEl) {
+            listingEl.style.transition = 'opacity 200ms ease, max-height 300ms ease';
+            listingEl.style.opacity = '0';
+            listingEl.style.maxHeight = listingEl.scrollHeight + 'px';
+            requestAnimationFrame(function() {
+                listingEl.style.maxHeight = '0';
+                listingEl.style.overflow = 'hidden';
+            });
+        }
+
+        // Clear any existing undo timer (previous ignore becomes permanent)
+        if (undoState.timer) {
+            clearTimeout(undoState.timer);
+            finalizeIgnore(undoState.opportunityId);
+        }
+
+        // Show toast
+        var toast = document.getElementById('undo-toast');
+        var toastText = document.getElementById('undo-toast-text');
+        toastText.textContent = '"' + (opportunity.title || 'Job') + '" ignored.';
+        toast.classList.remove('is-hidden');
+
+        // Store undo state
+        undoState.opportunityId = opportunity.id;
+        undoState.element = listingEl;
+
+        // Auto-dismiss after 5 seconds
+        undoState.timer = setTimeout(function() {
+            toast.classList.add('is-hidden');
+            finalizeIgnore(opportunity.id);
+            undoState = { timer: null, opportunityId: null, element: null };
+        }, 5000);
     }
+
+    function finalizeIgnore(opportunityId) {
+        window.api.updateOpportunityStatus(opportunityId, 'ignored').catch(function(err) {
+            console.error('Failed to ignore:', err);
+        });
+    }
+
+    document.getElementById('undo-toast-btn').addEventListener('click', function() {
+        if (undoState.timer) clearTimeout(undoState.timer);
+
+        // Restore the element
+        if (undoState.element) {
+            undoState.element.style.transition = 'opacity 200ms ease, max-height 300ms ease';
+            undoState.element.style.opacity = '1';
+            undoState.element.style.maxHeight = '';
+            undoState.element.style.overflow = '';
+        }
+
+        // Hide toast
+        document.getElementById('undo-toast').classList.add('is-hidden');
+        undoState = { timer: null, opportunityId: null, element: null };
+    });
 
     async function updateStatus(opportunity, status, activeBtn, otherBtn) {
         try {
