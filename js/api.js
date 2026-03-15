@@ -355,6 +355,19 @@ class APIClient {
     }
 
     /**
+     * Auth: Verify OTP code
+     */
+    async verifyOtpCode(email, code) {
+        const data = await this.request('/auth/verify-code', {
+            method: 'POST',
+            body: JSON.stringify({ email, code }),
+        });
+        this.setToken(data.access_token);
+        this.saveUser(data.user);
+        return data;
+    }
+
+    /**
      * Auth: Verify magic link token
      */
     async verifyMagicLink(token) {
