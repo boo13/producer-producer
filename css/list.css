@@ -907,6 +907,29 @@ details > .listing-detail {
     max-width: 70ch;
 }
 
+/* ── Sentence Tier Highlighting ────────────────────────────────────────── */
+
+.tier-highlight {
+    background: #f5e6a3;
+    border-bottom: 2px solid #e6d080;
+    padding: 0.08rem 0.2rem;
+    color: var(--ink-strong);
+    font-weight: 600;
+}
+
+.tier-normal {
+    color: var(--ink-body);
+}
+
+.tier-faded {
+    color: var(--ink-muted);
+}
+
+.tier-very-faded {
+    color: #c4b9a5;
+    font-size: 0.78rem;
+}
+
 .listing-actions {
     display: flex;
     justify-content: flex-start;
