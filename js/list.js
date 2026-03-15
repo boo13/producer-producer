@@ -309,9 +309,71 @@
         });
     }
 
+    function ignoreOpportunity(opportunity) {
+        console.log('Ignore:', opportunity.id); // Placeholder for Task 5
+    }
+
+    async function updateStatus(opportunity, status, activeBtn, otherBtn) {
+        try {
+            await window.api.updateOpportunityStatus(opportunity.id, status);
+            activeBtn.classList.add('is-active');
+            if (otherBtn) otherBtn.classList.remove('is-active');
+        } catch (err) {
+            console.error('Failed to update status:', err);
+        }
+    }
+
+    function createDetailActions(opportunity, detailInner) {
+        var actionsDiv = document.createElement('div');
+        actionsDiv.className = 'listing-detail-actions';
+
+        // Auth-gated buttons: Save, Applied, Ignore
+        if (window.api.isAuthenticated()) {
+            var saveBtn = document.createElement('button');
+            saveBtn.className = 'action-btn action-btn--save';
+            saveBtn.textContent = 'Save';
+            saveBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                updateStatus(opportunity, 'todo', saveBtn, appliedBtn);
+            });
+
+            var appliedBtn = document.createElement('button');
+            appliedBtn.className = 'action-btn action-btn--applied';
+            appliedBtn.textContent = 'Applied';
+            appliedBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                updateStatus(opportunity, 'applied', appliedBtn, saveBtn);
+            });
+
+            var ignoreBtn = document.createElement('button');
+            ignoreBtn.className = 'action-btn action-btn--ignore';
+            ignoreBtn.textContent = 'Ignore';
+            ignoreBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                ignoreOpportunity(opportunity);
+            });
+
+            actionsDiv.appendChild(saveBtn);
+            actionsDiv.appendChild(appliedBtn);
+            actionsDiv.appendChild(ignoreBtn);
+        }
+
+        // View original link — always visible (not gated behind auth)
+        var viewLink = document.createElement('a');
+        viewLink.className = 'action-link';
+        viewLink.href = opportunity.url || '#';
+        viewLink.target = '_blank';
+        viewLink.rel = 'noopener noreferrer';
+        viewLink.textContent = 'View original ↗';
+
+        actionsDiv.appendChild(viewLink);
+        detailInner.appendChild(actionsDiv);
+    }
+
     function createListingElement(opportunity, allDetails) {
         const details = document.createElement('details');
         details.className = 'listing-item';
+        details.setAttribute('data-opportunity-id', opportunity.id);
 
         const summary = document.createElement('summary');
         summary.className = 'listing-summary';
@@ -401,6 +463,7 @@
 
         actions.appendChild(applyLink);
         detailInner.appendChild(postedMeta);
+        createDetailActions(opportunity, detailInner);
         renderDescription(opportunity, detailInner);
         detailInner.appendChild(actions);
         detail.appendChild(detailInner);

@@ -965,6 +965,57 @@ details > .listing-detail {
     color: var(--ink-muted);
 }
 
+/* ── Action Buttons (expanded detail) ──────────────────────────────────── */
+
+.listing-detail-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    align-items: center;
+}
+
+.action-btn {
+    border: 1px solid var(--border-medium);
+    background: transparent;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.38rem 0.85rem;
+    cursor: pointer;
+    transition: background 110ms ease, color 110ms ease, border-color 110ms ease;
+    color: var(--ink-secondary);
+}
+
+.action-btn:hover {
+    border-color: var(--ink-strong);
+    color: var(--ink-strong);
+}
+
+.action-btn--save { border-color: var(--accent-red); color: var(--accent-red); }
+.action-btn--save:hover { background: var(--accent-red); color: #fff8f5; }
+.action-btn--save.is-active { background: var(--accent-red); color: #fff8f5; }
+
+.action-btn--applied.is-active { background: var(--ink-strong); color: var(--bg-page); }
+
+.action-btn--ignore { border-color: var(--border-light); color: var(--ink-muted); }
+.action-btn--ignore:hover { border-color: var(--border-medium); color: var(--ink-secondary); }
+
+.action-link {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    text-decoration: none;
+    margin-left: auto;
+    transition: color 180ms ease;
+}
+
+.action-link:hover { color: var(--accent-amber); }
+
 /* ── Animation ──────────────────────────────────────────────────────────── */
 
 @keyframes rise-in {
