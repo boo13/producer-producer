@@ -1,0 +1,127 @@
+<h2>List View — Collapsed + Expanded Job</h2>
+<p class="subtitle">The core experience: scannable list with inline expand and sentence-level highlight/fade</p>
+
+<div style="max-width: 720px; margin: 2rem auto; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+
+  <!-- Header area -->
+  <div style="border-bottom: 2px solid #111; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+    <div style="font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em;">Producer Producer</div>
+    <div style="font-size: 0.8rem; color: #666; margin-top: 0.25rem;">47 jobs match your criteria</div>
+  </div>
+
+  <!-- Filter bar -->
+  <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center;">
+    <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #999; letter-spacing: 0.05em;">Min Score</span>
+    <span style="background: #111; color: #fff; padding: 0.2rem 0.6rem; border-radius: 3px; font-size: 0.8rem; font-weight: 600;">75</span>
+    <span style="font-size: 0.75rem; color: #ccc; margin: 0 0.25rem;">|</span>
+    <span style="font-size: 0.8rem; font-weight: 600; color: #111; border-bottom: 2px solid #111; padding-bottom: 1px;">All</span>
+    <span style="font-size: 0.8rem; color: #666; cursor: pointer;">News</span>
+    <span style="font-size: 0.8rem; color: #666; cursor: pointer;">Podcast</span>
+    <span style="font-size: 0.8rem; color: #666; cursor: pointer;">Video</span>
+    <span style="font-size: 0.8rem; color: #666; cursor: pointer;">Social</span>
+  </div>
+
+  <!-- Job row 1 - collapsed -->
+  <div style="border-top: 1px solid #e5e5e5; padding: 0.75rem 0; cursor: pointer;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+      <div>
+        <span style="font-weight: 700; font-size: 1rem;">Senior Producer, Podcasts</span>
+        <span style="color: #666; font-size: 0.85rem; margin-left: 0.5rem;">The New York Times</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 0.8rem; color: #444;">$120k–$150k</span>
+        <span style="background: #22c55e; color: white; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 3px;">88</span>
+      </div>
+    </div>
+    <div style="font-size: 0.75rem; color: #999; margin-top: 0.2rem;">NYC · 2d ago</div>
+  </div>
+
+  <!-- Job row 2 - EXPANDED with highlight/fade -->
+  <div style="border-top: 1px solid #e5e5e5; padding: 0.75rem 0; background: #fafafa; margin: 0 -1rem; padding: 0.75rem 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+      <div>
+        <span style="font-weight: 700; font-size: 1rem;">Executive Producer, Video</span>
+        <span style="color: #666; font-size: 0.85rem; margin-left: 0.5rem;">Vox Media</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 0.8rem; color: #444;">$140k–$180k</span>
+        <span style="background: #22c55e; color: white; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 3px;">92</span>
+      </div>
+    </div>
+    <div style="font-size: 0.75rem; color: #999; margin-top: 0.2rem;">Remote · 1d ago</div>
+
+    <!-- Action buttons -->
+    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; margin-bottom: 1rem;">
+      <button style="font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.75rem; border: 1.5px solid #111; background: #111; color: white; border-radius: 3px; cursor: pointer;">Save</button>
+      <button style="font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.75rem; border: 1.5px solid #111; background: white; color: #111; border-radius: 3px; cursor: pointer;">Applied</button>
+      <button style="font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.75rem; border: 1.5px solid #ccc; background: white; color: #999; border-radius: 3px; cursor: pointer;">Ignore</button>
+      <a style="font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.75rem; color: #666; text-decoration: underline; cursor: pointer; margin-left: auto;">View original ↗</a>
+    </div>
+
+    <!-- Job description with highlight/fade tiers -->
+    <div style="font-size: 0.85rem; line-height: 1.7;">
+      <!-- HIGHLIGHTED sentences - yellow background -->
+      <p><span style="background: #fef08a; padding: 0.1rem 0.2rem;">5+ years of experience in video production, with at least 2 years in a leadership or executive producer role.</span> <span style="background: #fef08a; padding: 0.1rem 0.2rem;">Salary range: $140,000–$180,000 annually plus equity.</span></p>
+
+      <!-- NORMAL sentences - full opacity -->
+      <p style="color: #222;">You'll lead a team of producers, editors, and creators to develop original video content across Vox Media's portfolio of brands. This role reports directly to the VP of Video and works closely with editorial leadership to shape the video strategy for 2026 and beyond.</p>
+
+      <!-- NORMAL -->
+      <p style="color: #222;">We're looking for someone who can balance creative vision with operational excellence — someone who has shipped ambitious projects on deadline and knows how to build and motivate a team.</p>
+
+      <!-- FADED - less important -->
+      <p style="color: #aaa;">Vox Media is home to some of the most influential brands in digital media, including The Verge, Vox, New York Magazine, Vulture, and SB Nation. We believe in the power of storytelling to change the world.</p>
+
+      <!-- FADED -->
+      <p style="color: #aaa;">We offer competitive benefits including health insurance, 401(k) matching, generous PTO, parental leave, and professional development stipends.</p>
+
+      <!-- VERY FADED - legal boilerplate -->
+      <p style="color: #d4d4d4; font-size: 0.75rem;">Vox Media is an equal opportunity employer. We celebrate diversity and are committed to creating an inclusive environment for all employees. All qualified applicants will receive consideration for employment without regard to race, color, religion, gender, gender identity or expression, sexual orientation, national origin, genetics, disability, age, or veteran status.</p>
+    </div>
+  </div>
+
+  <!-- Job row 3 - collapsed -->
+  <div style="border-top: 1px solid #e5e5e5; padding: 0.75rem 0; cursor: pointer;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+      <div>
+        <span style="font-weight: 700; font-size: 1rem;">Producer, Daily News Podcast</span>
+        <span style="color: #666; font-size: 0.85rem; margin-left: 0.5rem;">NPR</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 0.8rem; color: #444;">$95k–$115k</span>
+        <span style="background: #eab308; color: white; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 3px;">76</span>
+      </div>
+    </div>
+    <div style="font-size: 0.75rem; color: #999; margin-top: 0.2rem;">Washington, DC · 5d ago</div>
+  </div>
+
+  <!-- Job row 4 - collapsed -->
+  <div style="border-top: 1px solid #e5e5e5; padding: 0.75rem 0; cursor: pointer;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+      <div>
+        <span style="font-weight: 700; font-size: 1rem;">Supervising Producer, Social Video</span>
+        <span style="color: #666; font-size: 0.85rem; margin-left: 0.5rem;">CNN</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="background: #eab308; color: white; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 3px;">73</span>
+      </div>
+    </div>
+    <div style="font-size: 0.75rem; color: #999; margin-top: 0.2rem;">NYC · Hybrid · 1w ago</div>
+  </div>
+
+  <!-- Job row 5 - collapsed -->
+  <div style="border-top: 1px solid #e5e5e5; padding: 0.75rem 0; border-bottom: 1px solid #e5e5e5; cursor: pointer;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+      <div>
+        <span style="font-weight: 700; font-size: 1rem;">Senior Content Producer</span>
+        <span style="color: #666; font-size: 0.85rem; margin-left: 0.5rem;">Spotify</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 0.8rem; color: #444;">$130k–$160k</span>
+        <span style="background: #22c55e; color: white; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 3px;">85</span>
+      </div>
+    </div>
+    <div style="font-size: 0.75rem; color: #999; margin-top: 0.2rem;">NYC · Remote OK · 3d ago</div>
+  </div>
+
+</div>

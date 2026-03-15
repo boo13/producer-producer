@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg-page:        #f0e9d8;
+    --bg-card:        #faf6ee;
+    --bg-detail:      #f5efe0;
+    --bg-hover:       #ede5d0;
+    --border-light:   #d5cdb8;
+    --border-medium:  #bfb49d;
+    --ink-strong:     #1c1812;
+    --ink-body:       #3a3428;
+    --ink-secondary:  #6b6050;
+    --ink-muted:      #948878;
+    --accent-red:     #c0392b;
+    --accent-amber:   #b87514;
+    --score-bg:       #b87514;
+    --score-text:     #fef5e0;
+    --highlight-bg:   #f5e6a3;
+    --highlight-border: #e6d080;
+    --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    --font-body:    'Source Serif 4', Georgia, serif;
+    --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+    min-height: 100vh;
+    background-color: var(--bg-page);
+    color: var(--ink-body);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 2.5rem;
+}
+
+/* Header */
+.header {
+    background: #e5dcc8;
+    border-bottom: 1px solid var(--border-medium);
+    padding: 0.65rem 0;
+}
+
+.header-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.site-wordmark {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink-strong);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+}
+
+.header-auth {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: var(--ink-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    transition: color 180ms ease;
+}
+
+.header-auth:hover { color: var(--accent-amber); }
+
+/* Listing rows */
+.listing-item {
+    border: 1px solid var(--border-light);
+    border-top: none;
+    background: var(--bg-card);
+}
+
+.listing-item:first-child {
+    border-top: 1px solid var(--border-light);
+    border-radius: 3px 3px 0 0;
+}
+
+.listing-item:last-child {
+    border-radius: 0 0 3px 3px;
+}
+
+.listing-summary {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+    align-items: stretch;
+    cursor: pointer;
+    min-height: 5.25rem;
+    transition: background 180ms ease;
+}
+
+.listing-summary:hover { background: var(--bg-hover); }
+
+.score-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--score-bg);
+    color: var(--score-text);
+    font-family: var(--font-mono);
+    font-size: 1.65rem;
+    font-weight: 500;
+    border-right: 1px solid rgba(0,0,0,0.12);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    padding: 0 0.25rem;
+    gap: 0.2rem;
+}
+
+.score-badge-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    font-weight: 400;
+}
+
+.listing-info {
+    padding: 0.85rem 1rem;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.18rem;
+}
+
+.listing-role {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    line-height: 1.22;
+    color: var(--ink-strong);
+    font-weight: 700;
+}
+
+.listing-company {
+    margin: 0;
+    color: var(--ink-secondary);
+    font-size: 0.84rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--font-mono);
+}
+
+.listing-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.28rem;
+    margin-top: 0.4rem;
+}
+
+.pill-new {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    border-radius: 2px;
+    padding: 0.14rem 0.4rem;
+    border: 1px solid rgba(45, 122, 64, 0.45);
+    background: rgba(45, 122, 64, 0.12);
+    color: #2d7a40;
+}
+
+.listing-aside {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0.32rem;
+    padding: 0.85rem 0.85rem 0.85rem 0.65rem;
+    flex-shrink: 0;
+}
+
+.listing-salary {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-secondary);
+    white-space: nowrap;
+}
+
+.listing-meta-line {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--ink-muted);
+    white-space: nowrap;
+}
+
+.summary-chevron {
+    color: var(--ink-muted);
+    font-size: 1.05rem;
+    transition: transform 340ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    line-height: 1;
+}
+
+/* Expanded detail */
+.listing-detail {
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-detail);
+    padding: 1.1rem 1.25rem 1.25rem;
+    padding-left: calc(4.5rem + 1rem);
+}
+
+.listing-detail-meta {
+    margin: 0 0 0.6rem;
+    color: var(--ink-muted);
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+}
+
+/* Action buttons */
+.listing-detail-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    align-items: center;
+}
+
+.action-btn {
+    border: 1px solid var(--border-medium);
+    background: transparent;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.38rem 0.85rem;
+    cursor: pointer;
+    transition: background 110ms ease, color 110ms ease, border-color 110ms ease;
+    color: var(--ink-secondary);
+}
+
+.action-btn:hover {
+    border-color: var(--ink-strong);
+    color: var(--ink-strong);
+}
+
+.action-btn--primary {
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+}
+
+.action-btn--primary:hover {
+    background: var(--accent-red);
+    color: #fff8f5;
+}
+
+.action-btn--muted {
+    border-color: var(--border-light);
+    color: var(--ink-muted);
+}
+
+.action-btn--muted:hover {
+    border-color: var(--border-medium);
+    color: var(--ink-secondary);
+}
+
+.action-link {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    text-decoration: none;
+    margin-left: auto;
+    transition: color 180ms ease;
+}
+
+.action-link:hover { color: var(--accent-amber); }
+
+/* Job description with highlight tiers */
+.job-description {
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    line-height: 1.75;
+    max-width: 70ch;
+}
+
+.job-description p {
+    margin: 0 0 0.85rem;
+}
+
+/* Tier 1: HIGHLIGHTED — yellow marker */
+.tier-highlight {
+    background: var(--highlight-bg);
+    border-bottom: 2px solid var(--highlight-border);
+    padding: 0.08rem 0.15rem;
+    color: var(--ink-strong);
+    font-weight: 600;
+}
+
+/* Tier 2: NORMAL — full opacity, default */
+.tier-normal {
+    color: var(--ink-body);
+}
+
+/* Tier 3: FADED — secondary */
+.tier-faded {
+    color: var(--ink-muted);
+}
+
+/* Tier 4: VERY FADED — nearly invisible, smaller */
+.tier-very-faded {
+    color: #c4b9a5;
+    font-size: 0.78rem;
+}
+
+/* Section label */
+.section-label {
+    margin: 2rem 0 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div class="header-inner">
+        <a class="site-wordmark" href="#">Producer-Producer</a>
+        <button class="header-auth">Sign in →</button>
+    </div>
+</div>
+
+<div class="page">
+
+    <p class="section-label" style="margin-top: 2.5rem;">47 listings · 23 companies · 6 new today</p>
+
+    <!-- LISTING 1 — collapsed -->
+    <div class="listing-item">
+        <div class="listing-summary">
+            <div class="score-badge">
+                88
+                <span class="score-badge-label">Score</span>
+            </div>
+            <div class="listing-info">
+                <h3 class="listing-role">Senior Producer, Podcasts</h3>
+                <p class="listing-company">The New York Times</p>
+                <div class="listing-pills">
+                    <span class="pill-new">New</span>
+                </div>
+            </div>
+            <div class="listing-aside">
+                <span class="listing-salary">$120k – $150k</span>
+                <span class="listing-meta-line">NYC · 2d ago</span>
+                <span class="summary-chevron">›</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTING 2 — EXPANDED with highlight/fade -->
+    <div class="listing-item">
+        <div class="listing-summary" style="background: var(--bg-hover);">
+            <div class="score-badge">
+                92
+                <span class="score-badge-label">Score</span>
+            </div>
+            <div class="listing-info">
+                <h3 class="listing-role">Executive Producer, Video</h3>
+                <p class="listing-company">Vox Media</p>
+            </div>
+            <div class="listing-aside">
+                <span class="listing-salary">$140k – $180k</span>
+                <span class="listing-meta-line">Remote · 1d ago</span>
+                <span class="summary-chevron" style="transform: rotate(90deg);">›</span>
+            </div>
+        </div>
+
+        <div class="listing-detail">
+            <p class="listing-detail-meta">Posted Jan 12, 2026 · Vox Media · Full-time</p>
+
+            <div class="listing-detail-actions">
+                <button class="action-btn action-btn--primary">Save</button>
+                <button class="action-btn">Applied</button>
+                <button class="action-btn action-btn--muted">Ignore</button>
+                <a class="action-link" href="#">View original ↗</a>
+            </div>
+
+            <div class="job-description">
+                <p>
+                    <span class="tier-highlight">5+ years of experience in video production, with at least 2 years in a leadership or executive producer role.</span>
+                    <span class="tier-highlight">Salary range: $140,000 – $180,000 annually plus equity.</span>
+                </p>
+
+                <p class="tier-normal">You'll lead a team of producers, editors, and creators to develop original video content across Vox Media's portfolio of brands. This role reports directly to the VP of Video and works closely with editorial leadership to shape the video strategy for 2026 and beyond.</p>
+
+                <p class="tier-normal">We're looking for someone who can balance creative vision with operational excellence — someone who has shipped ambitious projects on deadline and knows how to build and motivate a team.</p>
+
+                <p class="tier-faded">Vox Media is home to some of the most influential brands in digital media, including The Verge, Vox, New York Magazine, Vulture, and SB Nation. We believe in the power of storytelling to change the world.</p>
+
+                <p class="tier-faded">We offer competitive benefits including health insurance, 401(k) matching, generous PTO, parental leave, and professional development stipends.</p>
+
+                <p class="tier-very-faded">Vox Media is an equal opportunity employer. We celebrate diversity and are committed to creating an inclusive environment for all employees. All qualified applicants will receive consideration for employment without regard to race, color, religion, gender, gender identity or expression, sexual orientation, national origin, genetics, disability, age, or veteran status.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTING 3 — collapsed -->
+    <div class="listing-item">
+        <div class="listing-summary">
+            <div class="score-badge">
+                76
+                <span class="score-badge-label">Score</span>
+            </div>
+            <div class="listing-info">
+                <h3 class="listing-role">Producer, Daily News Podcast</h3>
+                <p class="listing-company">NPR</p>
+            </div>
+            <div class="listing-aside">
+                <span class="listing-salary">$95k – $115k</span>
+                <span class="listing-meta-line">Washington, DC · 5d ago</span>
+                <span class="summary-chevron">›</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTING 4 — collapsed, no salary -->
+    <div class="listing-item">
+        <div class="listing-summary">
+            <div class="score-badge">
+                73
+                <span class="score-badge-label">Score</span>
+            </div>
+            <div class="listing-info">
+                <h3 class="listing-role">Supervising Producer, Social Video</h3>
+                <p class="listing-company">CNN</p>
+            </div>
+            <div class="listing-aside">
+                <span class="listing-meta-line">NYC · Hybrid · 1w ago</span>
+                <span class="summary-chevron">›</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTING 5 — collapsed -->
+    <div class="listing-item">
+        <div class="listing-summary">
+            <div class="score-badge">
+                85
+                <span class="score-badge-label">Score</span>
+            </div>
+            <div class="listing-info">
+                <h3 class="listing-role">Senior Content Producer</h3>
+                <p class="listing-company">Spotify</p>
+                <div class="listing-pills">
+                    <span class="pill-new">New</span>
+                </div>
+            </div>
+            <div class="listing-aside">
+                <span class="listing-salary">$130k – $160k</span>
+                <span class="listing-meta-line">NYC · Remote OK · 3d ago</span>
+                <span class="summary-chevron">›</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
