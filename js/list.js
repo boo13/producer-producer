@@ -373,22 +373,6 @@
         });
     }
 
-    document.getElementById('undo-toast-btn').addEventListener('click', function() {
-        if (undoState.timer) clearTimeout(undoState.timer);
-
-        // Restore the element
-        if (undoState.element) {
-            undoState.element.style.transition = 'opacity 200ms ease, max-height 300ms ease';
-            undoState.element.style.opacity = '1';
-            undoState.element.style.maxHeight = '';
-            undoState.element.style.overflow = '';
-        }
-
-        // Hide toast
-        document.getElementById('undo-toast').classList.add('is-hidden');
-        undoState = { timer: null, opportunityId: null, element: null };
-    });
-
     async function updateStatus(opportunity, status, activeBtn, otherBtn) {
         try {
             await window.api.updateOpportunityStatus(opportunity.id, status);
@@ -797,6 +781,25 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
+        var undoToastBtn = document.getElementById('undo-toast-btn');
+        if (undoToastBtn) {
+            undoToastBtn.addEventListener('click', function() {
+                if (undoState.timer) clearTimeout(undoState.timer);
+
+                // Restore the element
+                if (undoState.element) {
+                    undoState.element.style.transition = 'opacity 200ms ease, max-height 300ms ease';
+                    undoState.element.style.opacity = '1';
+                    undoState.element.style.maxHeight = '';
+                    undoState.element.style.overflow = '';
+                }
+
+                // Hide toast
+                document.getElementById('undo-toast').classList.add('is-hidden');
+                undoState = { timer: null, opportunityId: null, element: null };
+            });
+        }
+
         var signOutBtn = document.getElementById('sign-out-btn');
         if (signOutBtn) {
             signOutBtn.addEventListener('click', function() {
