@@ -36,7 +36,7 @@ async function verifyMagicLink(token) {
 
         // Redirect to v2 home after successful login
         setTimeout(() => {
-            window.location.href = '/v2/';
+            window.location.href = '/archive/v2/';
         }, 1500);
     } catch (err) {
         console.error('Magic link verification failed:', err);

@@ -97,7 +97,7 @@ test.describe('Swipe persistence', () => {
         );
 
         // --- Seed localStorage with auth so the app thinks we're logged in ---
-        await page.goto('http://localhost:8080');
+        await page.goto('http://localhost:8080/archive/desktop/');
 
         await page.evaluate(
             ([token, user]) => {

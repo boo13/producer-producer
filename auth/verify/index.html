@@ -6,49 +6,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="pp-api-base-url" content="https://producer-producer-api.fly.dev,https://api.producer-producer.com">
     <title>Verifying Magic Link - Producer-Producer</title>
-    <!-- Manual cache-busting: bump ?v=YYYYMMDD whenever CSS changes. -->
-    <link rel="stylesheet" href="../../css/styles.css?v=20260212a">
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #fafaf8;
+            color: #333;
+        }
+        .verify-wrap {
+            text-align: center;
+            padding: 2rem;
+        }
+        .verify-wrap p {
+            font-size: 1.1rem;
+            margin: 0 0 0.5rem;
+        }
+        .verify-error {
+            color: #c0392b;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+        }
+    </style>
 </head>
 
 <body>
-    <main class="desktop">
-        <!-- Auth Controls -->
-        <div class="auth-controls">
-            <span class="user-greeting is-hidden"></span>
-            <button class="settings-btn is-hidden">⚙️ Settings</button>
-            <button class="logout-btn is-hidden">Logout</button>
-        </div>
+    <div class="verify-wrap">
+        <p id="verify-message">Verifying your login link...</p>
+        <p class="verify-error is-hidden" id="verify-error"></p>
+    </div>
 
-        <!-- Animated Space Invader -->
-        <canvas id="space-invader" class="space-invader" width="96" height="96" aria-hidden="true"></canvas>
-
-        <!-- Loading Bar (decorative) -->
-        <div class="loading-bar is-visible" role="presentation">
-            <span class="loading-label">Verifying your login link...</span>
-            <div class="loading-track">
-                <div class="loading-fill"></div>
-            </div>
-        </div>
-
-        <!-- Speech Bubble (decorative) -->
-        <div class="speech-bubble" role="presentation">
-            <span class="speech-bubble-text">...</span>
-        </div>
-
-        <!-- Robot Illustration (decorative) -->
-        <div class="desktop-robot" role="presentation" aria-hidden="true">
-            <img src="../../images/robot-neutral-svgrepo-com.svg" alt="" loading="lazy">
-        </div>
-    </main>
-
-    <!-- Manual cache-busting: keep JS/CSS versions in sync -->
-    <script src="../../js/api.js?v=20260212b"></script>
-    <script src="../../js/auth.js?v=20260212a"></script>
-    <script src="../../js/opportunities.js?v=20260117b"></script>
-    <script src="../../js/settings.js?v=20260117b"></script>
-    <script src="../../js/space-invader.js?v=20260116"></script>
-    <script src="../../js/subscribe-form.js?v=20260116b"></script>
+    <script src="../../js/api.js?v=20260408"></script>
+    <script src="../../js/auth.js?v=20260408"></script>
 </body>
 
 </html>

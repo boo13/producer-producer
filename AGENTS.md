@@ -2,13 +2,17 @@
 
 Static frontend repo for `producer-producer.com`.
 
-## Current State (as of February 2026)
+## Current State (as of April 2026)
 
-This repo now has three active surfaces:
+This repo has two active surfaces and two archived ones:
 
-1. `index.html` (`/`): legacy retro desktop UI (windowed interface).
-2. `v2/index.html` (`/v2/`): mobile-first swipe app ("Tinder for jobs").
-3. `stats.html` (`/stats.html`): ops dashboard for public and admin stats.
+1. `index.html` (`/`): curated job listings (promoted from `list.html`). **Main experience.**
+2. `stats.html` (`/stats.html`): ops dashboard for public and admin stats.
+
+Archived (functional but no longer primary):
+
+3. `archive/desktop/index.html` (`/archive/desktop/`): legacy retro desktop UI (windowed interface).
+4. `archive/v2/index.html` (`/archive/v2/`): mobile-first swipe app ("Tinder for jobs").
 
 ## Architecture
 
@@ -21,19 +25,31 @@ This repo now has three active surfaces:
 
 ```text
 producer-producer/
-├── index.html                # Legacy retro desktop experience
+├── index.html                # Curated job listings (main experience)
 ├── stats.html                # Stats dashboard page
-├── v2/
-│   ├── index.html            # Swipe app entry point
-│   ├── css/styles.css
-│   └── js/*.js
+├── auth/
+│   └── verify/
+│       └── index.html        # Magic link landing page (shared)
 ├── css/
-│   ├── styles.css            # Legacy desktop styles
+│   ├── list.css              # Main listing styles
 │   └── stats.css             # Stats dashboard styles
-├── js/                       # Legacy desktop + shared utilities
+├── js/                       # Shared utilities
+│   ├── api.js                # Shared API client
+│   ├── auth.js               # Shared auth module
+│   ├── list.js               # Main listing logic
+│   └── stats.js              # Stats dashboard logic
+├── archive/
+│   ├── desktop/              # Legacy retro desktop UI + all its assets
+│   │   ├── index.html
+│   │   ├── css/styles.css
+│   │   ├── js/*.js
+│   │   └── images/
+│   └── v2/                   # Legacy swipe app + all its assets
+│       ├── index.html
+│       ├── css/styles.css
+│       └── js/*.js
 ├── tests/
-│   ├── playwright-smoke.spec.ts
-│   └── agent-smoke.sh
+│   └── swipe-persistence.spec.ts
 ├── docs/plans/               # Design/implementation plans
 ├── DEPLOYMENT.md
 └── README.md
@@ -41,36 +57,16 @@ producer-producer/
 
 ## Surface Details
 
-### 1) Legacy Desktop (`/`)
+### 1) Curated Listings (`/`) — Primary
 
 - Entry: `index.html`
 - Main modules:
-  - `js/subscribe-form.js` (newsletter form, desktop window manager, drag/minimize/maximize behavior)
-  - `js/opportunities.js`
-  - `js/applications.js`
-  - `js/companies.js`
-  - `js/auth.js`
-  - `js/settings.js`
-  - `js/api.js`
-- UI model:
-  - Decorative + functional windows with tiered z-index.
-  - Custom events like `pp:auth-changed` and `desktopWindow:opened`.
+  - `js/list.js` (listings fetch, filter, render)
+  - `js/api.js`, `js/auth.js`
+  - `css/list.css`
+- Features: score filter slider, category chips, status chips (saved/applied), newsletter signup, OTP verification, company marquee, summary stats.
 
-### 2) Swipe App (`/v2/`)
-
-- Entry: `v2/index.html`
-- Main modules:
-  - `v2/js/opportunities.js` (swipe feed + undo)
-  - `v2/js/swipe.js` (gesture manager)
-  - `v2/js/applications.js` (saved list + drag reorder)
-  - `v2/js/add-job.js` (user-submitted opportunities)
-  - `v2/js/login.js`, `v2/js/auth.js`, `v2/js/settings.js`
-  - `v2/js/api.js`
-- Key behavior:
-  - Mobile-first card UI.
-  - Saved jobs reorder persisted via `/users/me/opportunities/reorder`.
-
-### 3) Stats Dashboard (`/stats.html`)
+### 2) Stats Dashboard (`/stats.html`)
 
 - Entry: `stats.html`
 - Modules: `js/stats.js` + `js/api.js` + `css/stats.css`.
@@ -80,12 +76,24 @@ producer-producer/
   - `/stats/admin` (admin-only operational metrics)
   - `/health` (connectivity/latency)
 
+### 3) Legacy Desktop (`/archive/desktop/`) — Archived
+
+- Entry: `archive/desktop/index.html`
+- All desktop-specific assets live under `archive/desktop/` (css/, js/, images/).
+- Shared files (`js/api.js`, `js/auth.js`) are still at root — referenced via `../../js/`.
+
+### 4) Swipe App (`/archive/v2/`) — Archived
+
+- Entry: `archive/v2/index.html`
+- Fully self-contained: own `archive/v2/css/` and `archive/v2/js/`.
+- Post-login redirect points to `/archive/v2/`.
+
 ## API Client Reality
 
 There are two frontend API clients:
 
-1. `js/api.js` for legacy desktop and stats pages.
-2. `v2/js/api.js` for the v2 app.
+1. `js/api.js` (root) — used by main listing page and stats page.
+2. `archive/v2/js/api.js` — used only by the archived swipe app.
 
 Keep endpoint and auth behavior aligned across both clients when backend contracts change.
 
@@ -105,15 +113,16 @@ python3 -m http.server 8080
 
 Then open:
 
-- `http://localhost:8080/`
-- `http://localhost:8080/v2/`
+- `http://localhost:8080/` — curated listings (main)
 - `http://localhost:8080/stats.html`
+- `http://localhost:8080/archive/desktop/` — legacy desktop
+- `http://localhost:8080/archive/v2/` — legacy swipe app
 
 ### Use local backend
 
 - Run API in `producer-producer-api` separately (typically on `http://localhost:8000`).
 - Use `?api=local` in frontend URL when needed.
-  - Example: `http://localhost:8080/v2/?api=local`
+  - Example: `http://localhost:8080/?api=local`
 
 ## Verification
   - ✅ Use `playwright-cli` terminal commands for browser verification in this repo. (Tell user to install if not available.)
@@ -134,14 +143,15 @@ Then open:
 - CSS/JS cache busting is manual via query-string versions in HTML files.
 - When shipping frontend changes, bump version params in all affected entry points:
   - `index.html`
-  - `v2/index.html`
   - `stats.html`
+  - `archive/desktop/index.html` (if touching shared `js/api.js` or `js/auth.js`)
+  - `archive/v2/index.html` (if touching archive/v2 assets)
 
 See `DEPLOYMENT.md` for current deployment checklist details.
 
 ## Maintenance Guardrails
 
-- **Duplicated modules are the #1 bug source.** `js/` and `v2/js/` have parallel copies of `opportunities.js`, `applications.js`, `api.js`, `auth.js`, and `settings.js`. A fix to one is almost always needed in the other. Always check both.
+- **Duplicated modules are the #1 bug source.** `js/` and `archive/v2/js/` have parallel copies of `api.js` and `auth.js`. A fix to the shared `js/api.js` or `js/auth.js` may need mirroring in `archive/v2/js/` if the archived swipe app is still in use. Always check both.
 - When shipping JS changes, bump the `?v=` cache-bust param in the affected HTML entry points or browsers will serve stale code.
 - Keep auth state flows event-compatible (`pp:auth-changed`) across modules.
 - Preserve the no-build-step constraint unless explicitly planning a tooling migration.
