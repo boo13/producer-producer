@@ -7,12 +7,14 @@ Static frontend repo for `producer-producer.com`.
 This repo has two active surfaces and two archived ones:
 
 1. `index.html` (`/`): curated job listings (promoted from `list.html`). **Main experience.**
-2. `stats.html` (`/stats.html`): ops dashboard for public and admin stats.
+2. `admin.html` (`/admin.html`): unified admin dashboard (monitoring, stats, GitHub, uptime). Requires admin JWT.
 
 Archived (functional but no longer primary):
 
 3. `archive/desktop/index.html` (`/archive/desktop/`): legacy retro desktop UI (windowed interface).
 4. `archive/v2/index.html` (`/archive/v2/`): mobile-first swipe app ("Tinder for jobs").
+
+**Deleted:** `stats.html`, `js/stats.js`, `css/stats.css` — all content absorbed into `admin.html`.
 
 ## Architecture
 
@@ -26,18 +28,18 @@ Archived (functional but no longer primary):
 ```text
 producer-producer/
 ├── index.html                # Curated job listings (main experience)
-├── stats.html                # Stats dashboard page
+├── admin.html                # Admin dashboard (auth-gated)
 ├── auth/
 │   └── verify/
 │       └── index.html        # Magic link landing page (shared)
 ├── css/
-│   ├── list.css              # Main listing styles
-│   └── stats.css             # Stats dashboard styles
+│   ├── list.css              # Main listing styles (editorial tokens)
+│   └── admin.css             # Admin dashboard styles (same editorial tokens)
 ├── js/                       # Shared utilities
-│   ├── api.js                # Shared API client
+│   ├── api.js                # Shared API client (includes admin helpers)
 │   ├── auth.js               # Shared auth module
 │   ├── list.js               # Main listing logic
-│   └── stats.js              # Stats dashboard logic
+│   └── admin.js              # Admin dashboard logic
 ├── archive/
 │   ├── desktop/              # Legacy retro desktop UI + all its assets
 │   │   ├── index.html
@@ -61,20 +63,31 @@ producer-producer/
 
 - Entry: `index.html`
 - Main modules:
-  - `js/list.js` (listings fetch, filter, render)
+  - `js/list.js` (listings fetch, filter, render; also calls `/stats` for 4 public counters)
   - `js/api.js`, `js/auth.js`
   - `css/list.css`
-- Features: score filter slider, category chips, status chips (saved/applied), newsletter signup, OTP verification, company marquee, summary stats.
+- Features: score filter slider, category chips, status chips (saved/applied), newsletter signup, OTP verification, company marquee, summary stats (Total Listings, Companies, New today, Added 7d).
 
-### 2) Stats Dashboard (`/stats.html`)
+### 2) Admin Dashboard (`/admin.html`) — Auth-gated
 
-- Entry: `stats.html`
-- Modules: `js/stats.js` + `js/api.js` + `css/stats.css`.
+- Entry: `admin.html`
+- Modules: `js/admin.js` + `js/api.js` + `css/admin.css`.
+- Auth gate: shows email form for magic-link login; dashboard hidden until JWT present.
+- Sections:
+  - Hero status grid (6 tiles: Frontend, API, Fly Direct, Workflows, Crons [placeholder], Issues)
+  - Uptime & Health (live HTTP checks + BetterStack monitors)
+  - GitHub Workflows (badges + failed-runs table)
+  - Crons — grayed placeholder (Healthchecks.io, deferred — AI-211)
+  - App-Domain Health (new opportunities 24h, pending reviews, AI disagreements, maintenance health/runs)
+  - Issues & PRs (open issues table)
+  - Absorbed public stats (Overview, Freshness, Pipeline, Growth, Scores, Companies, Sources, Admin Stats)
 - Pulls from:
-  - `/stats` (public aggregates)
-  - `/stats/growth` (time-series growth)
-  - `/stats/admin` (admin-only operational metrics)
-  - `/health` (connectivity/latency)
+  - `/stats`, `/stats/growth`, `/stats/admin`
+  - `/admin/status` (fan-out: HTTP health + GitHub summary + BetterStack)
+  - `/admin/github/workflows`, `/admin/github/runs/failed`, `/admin/github/issues`
+  - `/admin/uptime/betterstack`
+  - `/health`
+- 60s auto-refresh with pause/resume.
 
 ### 3) Legacy Desktop (`/archive/desktop/`) — Archived
 
@@ -92,16 +105,16 @@ producer-producer/
 
 There are two frontend API clients:
 
-1. `js/api.js` (root) — used by main listing page and stats page.
+1. `js/api.js` (root) — used by main listing page and admin dashboard.
 2. `archive/v2/js/api.js` — used only by the archived swipe app.
 
 Keep endpoint and auth behavior aligned across both clients when backend contracts change.
 
 Notable current behavior:
 
-- `js/api.js` supports multi-host failover and diagnostics.
+- `js/api.js` supports multi-host failover and diagnostics, plus admin endpoint helpers.
 - `?api=local` can force local API hosts during frontend dev.
-- Current production default targets `https://producer-producer-api.fly.dev` (with `api.producer-producer.com` fallback in legacy client pathing/comments).
+- Current production default targets `https://producer-producer-api.fly.dev` (with `api.producer-producer.com` fallback).
 
 ## Development Workflow
 
@@ -114,7 +127,7 @@ python3 -m http.server 8080
 Then open:
 
 - `http://localhost:8080/` — curated listings (main)
-- `http://localhost:8080/stats.html`
+- `http://localhost:8080/admin.html` — admin dashboard
 - `http://localhost:8080/archive/desktop/` — legacy desktop
 - `http://localhost:8080/archive/v2/` — legacy swipe app
 
@@ -142,8 +155,8 @@ Then open:
 - Hosting target: GitHub Pages.
 - CSS/JS cache busting is manual via query-string versions in HTML files.
 - When shipping frontend changes, bump version params in all affected entry points:
-  - `index.html`
-  - `stats.html`
+  - `index.html` (if touching `js/api.js` or `js/list.js`)
+  - `admin.html` (if touching `js/api.js` or `js/admin.js` or `css/admin.css`)
   - `archive/desktop/index.html` (if touching shared `js/api.js` or `js/auth.js`)
   - `archive/v2/index.html` (if touching archive/v2 assets)
 
@@ -155,3 +168,4 @@ See `DEPLOYMENT.md` for current deployment checklist details.
 - When shipping JS changes, bump the `?v=` cache-bust param in the affected HTML entry points or browsers will serve stale code.
 - Keep auth state flows event-compatible (`pp:auth-changed`) across modules.
 - Preserve the no-build-step constraint unless explicitly planning a tooling migration.
+- `AGENTS.md` is canonical; `CLAUDE.md` is a symlink — edit only `AGENTS.md`.

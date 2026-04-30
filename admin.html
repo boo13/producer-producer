@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pp-api-base-url" content="https://producer-producer-api.fly.dev,https://api.producer-producer.com">
+    <title>Producer-Producer Admin</title>
+    <link rel="stylesheet" href="css/admin.css?v=20260430">
+</head>
+
+<body>
+
+    <header class="header">
+        <div class="header-left">
+            <h1 class="header-title"><a href="/">Producer-Producer</a> Admin</h1>
+            <span class="connection-indicator" id="connection-indicator">
+                <span class="indicator-dot"></span>
+                <span class="indicator-text">Checking...</span>
+                <span class="latency-text" id="latency-text"></span>
+            </span>
+        </div>
+        <div class="header-right">
+            <span class="last-updated" id="last-updated">—</span>
+            <button class="btn" id="refresh-btn" title="Refresh now">↻ Refresh</button>
+            <button class="btn" id="pause-btn" title="Pause auto-refresh">⏸ Pause</button>
+        </div>
+    </header>
+
+    <div class="api-offline-banner is-hidden" id="api-offline-banner">
+        API offline — last good update: <span id="last-good-time">never</span>
+    </div>
+
+    <!-- Auth gate — shown when not authenticated -->
+    <div class="auth-gate" id="auth-gate">
+        <h2>Admin Access</h2>
+        <p>Enter your admin email to receive a login link.</p>
+        <form class="auth-email-form" id="auth-form" novalidate>
+            <input type="email" class="auth-email-input" id="auth-email" placeholder="admin@example.com" autocomplete="email" required>
+            <button type="submit" class="auth-submit">Send link →</button>
+        </form>
+        <p class="auth-status" id="auth-status"></p>
+    </div>
+
+    <!-- Dashboard — shown after authentication -->
+    <main class="dashboard is-hidden" id="dashboard">
+
+        <div class="warning-banner is-hidden" id="no-new-opps-banner">
+            ⚠ No new opportunities added in the past 24 hours
+        </div>
+
+        <!-- Hero grid -->
+        <section class="section" id="section-hero">
+            <h2 class="section-title">Status</h2>
+            <div class="hero-grid">
+                <div class="status-tile" id="tile-frontend">
+                    <span class="tile-icon">🌐</span>
+                    <span class="tile-label">Frontend</span>
+                    <span class="tile-status" id="tile-frontend-status">—</span>
+                    <span class="tile-latency" id="tile-frontend-latency"></span>
+                </div>
+                <div class="status-tile" id="tile-api">
+                    <span class="tile-icon">🔌</span>
+                    <span class="tile-label">API</span>
+                    <span class="tile-status" id="tile-api-status">—</span>
+                    <span class="tile-latency" id="tile-api-latency"></span>
+                </div>
+                <div class="status-tile" id="tile-fly">
+                    <span class="tile-icon">✈︎</span>
+                    <span class="tile-label">Fly Direct</span>
+                    <span class="tile-status" id="tile-fly-status">—</span>
+                    <span class="tile-latency" id="tile-fly-latency"></span>
+                </div>
+                <div class="status-tile" id="tile-workflows">
+                    <span class="tile-icon">⚙</span>
+                    <span class="tile-label">Workflows</span>
+                    <span class="tile-status" id="tile-workflows-status">—</span>
+                    <span class="tile-latency"></span>
+                </div>
+                <div class="status-tile tile-off" id="tile-crons" title="Healthchecks.io integration coming soon">
+                    <span class="tile-icon">⏰</span>
+                    <span class="tile-label">Crons</span>
+                    <span class="tile-status">Pending</span>
+                    <span class="tile-latency">AI-211</span>
+                </div>
+                <div class="status-tile" id="tile-errors">
+                    <span class="tile-icon">🐛</span>
+                    <span class="tile-label">Issues</span>
+                    <span class="tile-status" id="tile-errors-status">—</span>
+                    <span class="tile-latency"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Uptime & Health -->
+        <section class="section" id="section-uptime">
+            <h2 class="section-title">Uptime &amp; Health</h2>
+
+            <h3 class="subsection-title">Live checks</h3>
+            <div class="health-checks" id="health-checks">
+                <div class="health-check-row">
+                    <span class="health-check-url">Loading...</span>
+                </div>
+            </div>
+
+            <h3 class="subsection-title">BetterStack monitors</h3>
+            <div class="monitors-list" id="betterstack-monitors">
+                <span class="not-configured">Configure BETTERSTACK_TOKEN to see monitors</span>
+            </div>
+        </section>
+
+        <!-- GitHub Workflows -->
+        <section class="section" id="section-workflows">
+            <h2 class="section-title">GitHub Workflows</h2>
+
+            <h3 class="subsection-title">Status badges</h3>
+            <div class="workflows-grid" id="workflows-badges">
+                <span class="not-configured">Configure GITHUB_TOKEN to see workflows</span>
+            </div>
+
+            <h3 class="subsection-title">Failed runs (recent)</h3>
+            <table class="data-table" id="failed-runs-table">
+                <thead>
+                    <tr>
+                        <th>Repo</th>
+                        <th>Workflow</th>
+                        <th>Branch</th>
+                        <th>Commit</th>
+                        <th>Started</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody id="failed-runs-body">
+                    <tr><td colspan="6" class="empty-row">—</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Crons — deferred placeholder -->
+        <section class="section section--disabled" id="section-crons">
+            <h2 class="section-title">Crons (Healthchecks.io)</h2>
+            <p style="font-size:0.85rem; color:var(--ink-muted); margin:0;">
+                Healthchecks.io integration deferred — see Linear AI-211.
+                Once configured, this section will show last-ping time and status per cron job.
+            </p>
+        </section>
+
+        <!-- App-Domain Health -->
+        <section class="section" id="section-app-health">
+            <h2 class="section-title">App-Domain Health</h2>
+            <div class="cards-row" id="app-health-cards">
+                <div class="card">
+                    <div class="card-value" id="stat-24h">—</div>
+                    <div class="card-label">New (24h)</div>
+                </div>
+                <div class="card">
+                    <div class="card-value" id="stat-pending-reviews">—</div>
+                    <div class="card-label">Pending Reviews</div>
+                </div>
+                <div class="card">
+                    <div class="card-value" id="stat-ai-disagreements">—</div>
+                    <div class="card-label">AI Disagreements</div>
+                </div>
+            </div>
+
+            <h3 class="subsection-title">Maintenance health</h3>
+            <div class="health-grid" id="health-grid">
+                <span class="empty-row">No data</span>
+            </div>
+
+            <h3 class="subsection-title">Recent maintenance runs</h3>
+            <table class="data-table" id="maintenance-table">
+                <thead><tr><th>Task</th><th>Status</th><th>Duration</th><th>Timestamp</th></tr></thead>
+                <tbody><tr><td colspan="4" class="empty-row">No runs recorded</td></tr></tbody>
+            </table>
+        </section>
+
+        <!-- Issues & PRs -->
+        <section class="section" id="section-issues">
+            <h2 class="section-title">Issues &amp; PRs</h2>
+            <div class="cards-row" id="issues-cards">
+                <div class="card">
+                    <div class="card-value" id="stat-open-issues">—</div>
+                    <div class="card-label">Open Issues</div>
+                </div>
+                <div class="card">
+                    <div class="card-value" id="stat-open-prs">—</div>
+                    <div class="card-label">Open PRs</div>
+                </div>
+            </div>
+
+            <h3 class="subsection-title">Open issues</h3>
+            <table class="data-table" id="issues-table">
+                <thead><tr><th>Repo</th><th>Title</th><th>Labels</th><th>Opened</th></tr></thead>
+                <tbody id="issues-body">
+                    <tr><td colspan="4" class="empty-row">Configure GITHUB_TOKEN to see issues</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Absorbed public stats -->
+        <section class="section" id="section-overview">
+            <h2 class="section-title">Overview</h2>
+            <div class="cards-row" id="overview-cards">
+                <div class="card"><div class="card-value" id="stat-total">—</div><div class="card-label">Total Listings</div></div>
+                <div class="card"><div class="card-value" id="stat-active">—</div><div class="card-label">Active Listings</div></div>
+                <div class="card"><div class="card-value" id="stat-7d">—</div><div class="card-label">Added (7d)</div></div>
+                <div class="card"><div class="card-value" id="stat-companies">—</div><div class="card-label">Total Companies</div></div>
+                <div class="card"><div class="card-value" id="stat-active-companies">—</div><div class="card-label">Active Companies</div></div>
+            </div>
+        </section>
+
+        <section class="section" id="section-freshness">
+            <h2 class="section-title">Data Freshness</h2>
+            <div class="cards-row">
+                <div class="card card-sm"><div class="card-sub" id="stat-newest-date"></div><div class="card-value" id="stat-newest-time">—</div><div class="card-label">Newest Posted</div></div>
+                <div class="card card-sm"><div class="card-value" id="stat-oldest-active">—</div><div class="card-label">Oldest Active</div></div>
+                <div class="card card-sm"><div class="card-value" id="stat-remote-pct">—</div><div class="card-label">Remote %</div></div>
+                <div class="card card-sm"><div class="card-value" id="stat-salary-pct">—</div><div class="card-label">Has Salary %</div></div>
+                <div class="card card-sm"><div class="card-value" id="stat-avg-score">—</div><div class="card-label">Avg Score</div></div>
+                <div class="card card-sm"><div class="card-value" id="stat-median-score">—</div><div class="card-label">Median Score</div></div>
+            </div>
+        </section>
+
+        <section class="section" id="section-pipeline">
+            <h2 class="section-title">Filter Pipeline</h2>
+            <div class="pipeline-bar" id="pipeline-bar"></div>
+            <div class="pipeline-legend" id="pipeline-legend"></div>
+        </section>
+
+        <section class="section" id="section-growth">
+            <h2 class="section-title">Listings Growth</h2>
+            <div class="line-chart-container" id="growth-chart"></div>
+        </section>
+
+        <section class="section" id="section-scores">
+            <h2 class="section-title">Score Distribution</h2>
+            <div class="histogram" id="score-histogram"></div>
+        </section>
+
+        <section class="section" id="section-companies">
+            <h2 class="section-title">Top Companies by Listings</h2>
+            <table class="data-table" id="companies-table">
+                <thead><tr><th>#</th><th>Company</th><th>Listings</th></tr></thead>
+                <tbody><tr><td colspan="3" class="empty-row">Loading...</td></tr></tbody>
+            </table>
+        </section>
+
+        <section class="section" id="section-sources">
+            <h2 class="section-title">Sources</h2>
+            <table class="data-table" id="sources-table">
+                <thead><tr><th>Source</th><th>Count</th></tr></thead>
+                <tbody><tr><td colspan="2" class="empty-row">Loading...</td></tr></tbody>
+            </table>
+        </section>
+
+        <!-- Admin-only stats -->
+        <section class="section" id="section-admin">
+            <h2 class="section-title">Admin Stats</h2>
+            <div class="cards-row" id="admin-cards">
+                <div class="card"><div class="card-value" id="stat-users">—</div><div class="card-label">Total Users</div></div>
+                <div class="card"><div class="card-value" id="stat-active-users">—</div><div class="card-label">Active Users (7d)</div></div>
+                <div class="card"><div class="card-value" id="stat-evals-total">—</div><div class="card-label">Filter Evals</div></div>
+                <div class="card"><div class="card-value" id="stat-evals-24h">—</div><div class="card-label">Evals (24h)</div></div>
+                <div class="card"><div class="card-value" id="stat-ai-total">—</div><div class="card-label">AI Analyses</div></div>
+                <div class="card"><div class="card-value" id="stat-ai-24h">—</div><div class="card-label">AI (24h)</div></div>
+            </div>
+
+            <h3 class="subsection-title">Top rejection reasons</h3>
+            <ol class="rejection-list" id="rejection-list">
+                <li class="empty-row">No data</li>
+            </ol>
+        </section>
+
+    </main>
+
+    <script src="js/api.js?v=20260430"></script>
+    <script src="js/admin.js?v=20260430"></script>
+
+</body>
+
+</html>

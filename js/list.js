@@ -860,5 +860,31 @@
         updateMinScoreInUrl(state.minScore);
         bindEvents();
         loadListings();
+        fetchPublicCounters();
     });
+
+    async function fetchPublicCounters() {
+        try {
+            const data = await window.api.getPublicStats();
+            const el7d = document.getElementById('summary-7d');
+            if (el7d && data.opportunities_added_7d != null) {
+                el7d.textContent = fmtInteger(data.opportunities_added_7d);
+            }
+            // Overwrite feed-derived counts with authoritative DB counts
+            const elTotal = document.getElementById('summary-total');
+            const elCompanies = document.getElementById('summary-companies');
+            const elNew = document.getElementById('summary-new');
+            if (elTotal && data.active_opportunities != null) {
+                elTotal.textContent = fmtInteger(data.active_opportunities);
+            }
+            if (elCompanies && data.active_companies != null) {
+                elCompanies.textContent = fmtInteger(data.active_companies);
+            }
+            if (elNew && data.opportunities_added_24h != null) {
+                elNew.textContent = fmtInteger(data.opportunities_added_24h);
+            }
+        } catch {
+            // counters stay at feed-derived values — non-fatal
+        }
+    }
 })();

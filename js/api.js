@@ -537,6 +537,69 @@ class APIClient {
             method: 'GET',
         });
     }
+
+    /**
+     * Stats: public aggregate stats
+     */
+    async getPublicStats() {
+        return await this.request('/stats', { method: 'GET' });
+    }
+
+    /**
+     * Stats: growth time-series
+     */
+    async getGrowthStats() {
+        return await this.request('/stats/growth', { method: 'GET' });
+    }
+
+    /**
+     * Stats: admin-only stats
+     */
+    async getAdminStats() {
+        return await this.request('/stats/admin', { method: 'GET' });
+    }
+
+    /**
+     * Admin: aggregated status (health + GitHub + BetterStack)
+     */
+    async getAdminStatus() {
+        return await this.request('/admin/status', { method: 'GET' });
+    }
+
+    /**
+     * Admin: GitHub workflow runs (60s cached server-side)
+     */
+    async getGithubWorkflows() {
+        return await this.request('/admin/github/workflows', { method: 'GET' });
+    }
+
+    /**
+     * Admin: failed GitHub workflow runs
+     */
+    async getGithubFailedRuns() {
+        return await this.request('/admin/github/runs/failed', { method: 'GET' });
+    }
+
+    /**
+     * Admin: open GitHub issues
+     */
+    async getGithubIssues() {
+        return await this.request('/admin/github/issues', { method: 'GET' });
+    }
+
+    /**
+     * Admin: accurate open issue + PR counts via Search API
+     */
+    async getGithubIssueCounts() {
+        return await this.request('/admin/github/issue-counts', { method: 'GET' });
+    }
+
+    /**
+     * Admin: BetterStack monitor list
+     */
+    async getBetterStackUptime() {
+        return await this.request('/admin/uptime/betterstack', { method: 'GET' });
+    }
 }
 
 // Create singleton instance
