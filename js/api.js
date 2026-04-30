@@ -347,10 +347,11 @@ class APIClient {
     /**
      * Auth: Request magic link
      */
-    async requestMagicLink(email) {
+    async requestMagicLink(email, purpose) {
+        const body = purpose ? { email, purpose } : { email };
         return await this.request('/auth/magic-link', {
             method: 'POST',
-            body: JSON.stringify({ email }),
+            body: JSON.stringify(body),
         });
     }
 

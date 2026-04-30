@@ -843,9 +843,9 @@
         if (!email) return;
         const statusEl = els.authStatus;
         if (statusEl) statusEl.textContent = 'Sending…';
-        window.api.requestMagicLink(email)
+        window.api.requestMagicLink(email, 'admin')
             .then(() => {
-                if (statusEl) statusEl.textContent = `Link sent to ${email} — check your inbox, then reload.`;
+                if (statusEl) statusEl.textContent = 'If that address is authorized, a sign-in link will arrive shortly.';
             })
             .catch((err) => {
                 if (statusEl) statusEl.textContent = 'Error: ' + (err.message || 'Failed to send');
