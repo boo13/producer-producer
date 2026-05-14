@@ -5,6 +5,21 @@
     const PAGE_SIZE = 100;
     const MAX_PAGES = 50;
     const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
+    const LIFECYCLE_DAYS = 21;
+    const CATEGORIES = ['all', 'news', 'podcast', 'video', 'social'];
+    const STATUS_FILTERS = [
+        { key: 'all', label: 'All Jobs' },
+        { key: 'saved', label: 'Saved' },
+        { key: 'applied', label: 'Applied' },
+    ];
+
+    const CATEGORY_LABELS = {
+        all: 'All',
+        news: 'News',
+        podcast: 'Podcast',
+        video: 'Video',
+        social: 'Social',
+    };
 
     const state = {
         minScore: DEFAULT_MIN_SCORE,
@@ -12,9 +27,14 @@
         statusFilter: 'all',
         listings: [],
         pendingAuthEmail: null,
+        savedIds: new Set(),
+        passedIds: new Set(),
+        appliedIds: new Set(),
+        isMobile: window.matchMedia('(max-width: 767px)').matches,
     };
 
-    var ignoredIds = new Set();
+    var localStatusSynced = false;
+    var localSetsLoaded = false;
 
     const $id = (id) => document.getElementById(id);
 
@@ -23,6 +43,8 @@
         minScoreInput: $id('min-score'),
         scoreValue: $id('score-value'),
         categoryChips: $id('category-chips'),
+        statusChips: $id('status-chips'),
+        statusFilterGroup: $id('status-filter-group'),
         refreshBtn: $id('refresh-btn'),
         connectionIndicator: $id('connection-indicator'),
         latencyText: $id('latency-text'),
@@ -32,6 +54,7 @@
         summaryTotal: $id('summary-total'),
         summaryCompanies: $id('summary-companies'),
         summaryNew: $id('summary-new'),
+        summary7d: $id('summary-7d'),
         companyList: $id('company-list'),
         companyTrack: $id('company-track'),
         skeletonList: $id('skeleton-list'),
@@ -40,43 +63,48 @@
         newsletterStatus: $id('newsletter-status'),
     };
 
-    function scoreStyles(score) {
-        // Interpolate bg from muted tan (score 0) to amber (score 100)
-        const t = Math.max(0, Math.min(1, score / 100));
-        const r = Math.round(220 + (184 - 220) * t);
-        const g = Math.round(200 + (117 - 200) * t);
-        const b = Math.round(158 + (20  - 158) * t);
-        const bg = `rgb(${r},${g},${b})`;
-        const color = '#fef5e0';
-        return { background: bg, color };
+    function isAuthenticated() {
+        return Boolean(window.api && window.api.isAuthenticated && window.api.isAuthenticated());
     }
 
-    function animateDetailOpen(detailEl) {
-        clearTimeout(detailEl._animTimer);
-        detailEl.style.cssText = 'height:0;overflow:hidden;opacity:0;transition:none';
-        void detailEl.offsetHeight;
-        const h = detailEl.scrollHeight;
-        detailEl.style.cssText =
-            `height:${h}px;overflow:hidden;opacity:1;` +
-            'transition:height 400ms cubic-bezier(0.25,0.46,0.45,0.94),opacity 280ms ease 60ms';
-        detailEl._animTimer = setTimeout(() => {
-            detailEl.style.cssText = 'height:auto;overflow:visible;opacity:1';
-        }, 410);
+    function loadLocalSets() {
+        ['savedIds', 'passedIds', 'appliedIds'].forEach(function(key) {
+            try {
+                var raw = localStorage.getItem('pp_' + key);
+                if (raw) JSON.parse(raw).forEach(function(id) { state[key].add(id); });
+            } catch(e) {}
+        });
+        localSetsLoaded = true;
     }
 
-    function animateDetailClose(detailsEl, detailEl, onDone) {
-        clearTimeout(detailEl._animTimer);
-        const h = detailEl.scrollHeight || detailEl.offsetHeight;
-        detailEl.style.cssText = `height:${h}px;overflow:hidden;opacity:1;transition:none`;
-        void detailEl.offsetHeight;
-        detailEl.style.cssText =
-            `height:0;overflow:hidden;opacity:0;` +
-            'transition:height 340ms cubic-bezier(0.25,0.46,0.45,0.94),opacity 200ms ease';
-        detailEl._animTimer = setTimeout(() => {
-            detailsEl.open = false;
-            detailEl.style.cssText = '';
-            if (onDone) onDone();
-        }, 350);
+    function saveLocalSet(key) {
+        try {
+            localStorage.setItem('pp_' + key, JSON.stringify(Array.from(state[key])));
+        } catch(e) {}
+    }
+
+    function syncLocalStatusToServer() {
+        if (!localSetsLoaded || localStatusSynced || !isAuthenticated() || !window.api.updateOpportunityStatus) return;
+        localStatusSynced = true;
+
+        var calls = [];
+        state.savedIds.forEach(function(id) {
+            calls.push(window.api.updateOpportunityStatus(id, 'todo').catch(function(err) {
+                console.error('Failed to sync saved status:', err);
+            }));
+        });
+        state.appliedIds.forEach(function(id) {
+            calls.push(window.api.updateOpportunityStatus(id, 'applied').catch(function(err) {
+                console.error('Failed to sync applied status:', err);
+            }));
+        });
+        state.passedIds.forEach(function(id) {
+            calls.push(window.api.updateOpportunityStatus(id, 'ignored').catch(function(err) {
+                console.error('Failed to sync passed status:', err);
+            }));
+        });
+
+        return Promise.all(calls);
     }
 
     function clampScore(value) {
@@ -140,18 +168,14 @@
         if (minLabel || maxLabel) {
             return minLabel || maxLabel;
         }
-
         if (salaryRaw && String(salaryRaw).trim()) {
             return String(salaryRaw).trim();
         }
-
         return 'Salary not listed';
     }
 
     function normalizeDescription(rawDescription) {
-        if (!rawDescription) {
-            return 'No description available.';
-        }
+        if (!rawDescription) return 'No description available.';
 
         const tmp = document.createElement('div');
         tmp.innerHTML = String(rawDescription);
@@ -173,6 +197,121 @@
         if (Number.isNaN(timestamp)) return false;
 
         return (Date.now() - timestamp) <= NEW_WINDOW_MS;
+    }
+
+    function jobAge(opp) {
+        const ref = opp.first_seen || opp.posted_date;
+        if (!ref) return 0;
+        const timestamp = new Date(ref).getTime();
+        if (Number.isNaN(timestamp)) return 0;
+        return Math.max(0, Math.floor((Date.now() - timestamp) / 86400000));
+    }
+
+    function freshColor(t) {
+        const normalized = Math.max(0, Math.min(1, t));
+        if (normalized < 0.5) {
+            const k = normalized / 0.5;
+            return `rgb(${Math.round(90 + k * 138)},${Math.round(107 - k * 7)},${Math.round(45 - k * 17)})`;
+        }
+        const k = (normalized - 0.5) / 0.5;
+        return `rgb(${Math.round(228 - k * 90)},${Math.round(100 - k * 64)},${Math.round(28 - k * 4)})`;
+    }
+
+    function ageLabel(age) {
+        if (age <= 1) return '◆ FRESH';
+        if (age >= LIFECYCLE_DAYS - 2) return 'EXPIRES SOON';
+        if (age >= 14) return 'STALE';
+        return `${age}d OLD`;
+    }
+
+    function getLocation(opp) {
+        if (opp.city && opp.state) return `${opp.city}, ${opp.state}`;
+        if (opp.city) return opp.city;
+        if (opp.state) return opp.state;
+        if (opp.is_remote) return 'Remote';
+        if (opp.location_raw) return opp.location_raw;
+        return null;
+    }
+
+    function isHot(opp) {
+        return (opp.score || 0) >= 90 && jobAge(opp) <= 2;
+    }
+
+    function getBullets(opp) {
+        const cls = opp.sentence_classifications;
+        if (cls && cls.length) {
+            const highlights = cls
+                .filter(function(item) { return item.tier === 'highlight' && item.text; })
+                .map(function(item) { return item.text; })
+                .slice(0, 4);
+            if (highlights.length) return highlights;
+        }
+
+        const rawDesc = opp.description_cleaned || opp.description || '';
+        if (!rawDesc) return [];
+        const desc = normalizeDescription(rawDesc);
+        if (desc === 'No description available.') return [];
+        return desc
+            .split(/[.!?]+\s+/)
+            .map(function(sentence) { return sentence.trim(); })
+            .filter(function(sentence) { return sentence.length > 20 && sentence.length < 220; })
+            .slice(0, 4);
+    }
+
+    function matchesCategory(opp, cat) {
+        if (cat === 'all') return true;
+        var text = ((opp.title || '') + ' ' + (opp.description || '')).toLowerCase();
+        var map = {
+            news:    ['news', 'journalist', 'reporter', 'editorial', 'anchor', 'broadcast'],
+            podcast: ['podcast', 'audio', 'radio', 'sound'],
+            video:   ['video', 'producer', 'cinemat', 'dp', 'director of photography'],
+            social:  ['social', 'digital', 'content creator', 'tiktok', 'instagram'],
+        };
+        return (map[cat] || []).some(function(kw) { return text.includes(kw); });
+    }
+
+    function renderDescription(opportunity, container) {
+        var classifications = opportunity.sentence_classifications;
+
+        if (!classifications || !classifications.length) {
+            var p = document.createElement('p');
+            p.className = 'listing-description tier-normal';
+            p.textContent = normalizeDescription(opportunity.description_cleaned || opportunity.description || '');
+            container.appendChild(p);
+            return;
+        }
+
+        var groups = [];
+        var currentGroup = null;
+
+        classifications.forEach(function(item) {
+            if (currentGroup && currentGroup.tier === item.tier) {
+                currentGroup.sentences.push(item.text);
+            } else {
+                currentGroup = { tier: item.tier, sentences: [item.text] };
+                groups.push(currentGroup);
+            }
+        });
+
+        groups.forEach(function(group) {
+            var p = document.createElement('p');
+            p.className = 'listing-description';
+
+            if (group.tier === 'highlight') {
+                group.sentences.forEach(function(sentence, i) {
+                    if (i > 0) p.appendChild(document.createTextNode(' '));
+                    var span = document.createElement('span');
+                    span.className = 'tier-highlight';
+                    span.textContent = sentence;
+                    p.appendChild(span);
+                });
+            } else {
+                p.classList.add('tier-' + group.tier.replace('_', '-'));
+                p.textContent = group.sentences.join(' ');
+            }
+
+            container.appendChild(p);
+        });
     }
 
     async function checkHealth() {
@@ -197,14 +336,12 @@
     function setLoading(isLoading) {
         if (els.minScoreInput) els.minScoreInput.disabled = isLoading;
         if (els.refreshBtn) els.refreshBtn.disabled = isLoading;
-        
-        if (isLoading) {
-            if (els.skeletonList) els.skeletonList.classList.remove('is-hidden');
-            // Don't clear companyList immediately to avoid layout shift if possible, 
-            // but for a clean "refresh" state we might want to.
-            // For now, let's just show skeleton.
+        if (!els.skeletonList) return;
+
+        if (isLoading && !state.isMobile) {
+            els.skeletonList.classList.remove('is-hidden');
         } else {
-            if (els.skeletonList) els.skeletonList.classList.add('is-hidden');
+            els.skeletonList.classList.add('is-hidden');
         }
     }
 
@@ -231,19 +368,17 @@
     }
 
     async function fetchAllListings(minScore) {
-        if (state.statusFilter && state.statusFilter !== 'all' && window.api.isAuthenticated()) {
-            // Use for-me endpoint with status filter
+        if (state.statusFilter !== 'all' && isAuthenticated()) {
             var statusMap = { saved: 'todo', applied: 'applied' };
             var params = {
                 min_score: minScore,
-                status_filter: statusMap[state.statusFilter],
+                status: statusMap[state.statusFilter],
                 limit: PAGE_SIZE,
             };
             var results = await window.api.getOpportunitiesForMe(params);
             return results || [];
         }
 
-        // Public feed pagination
         const items = [];
 
         for (let page = 0; page < MAX_PAGES; page += 1) {
@@ -253,15 +388,10 @@
                 offset: items.length,
             });
 
-            if (!Array.isArray(batch) || batch.length === 0) {
-                break;
-            }
+            if (!Array.isArray(batch) || batch.length === 0) break;
 
             items.push(...batch);
-
-            if (batch.length < PAGE_SIZE) {
-                break;
-            }
+            if (batch.length < PAGE_SIZE) break;
         }
 
         return dedupeListings(items);
@@ -278,278 +408,356 @@
         });
     }
 
-    function renderDescription(opportunity, container) {
-        var classifications = opportunity.sentence_classifications;
+    function buildFreshBar(opp) {
+        var age = jobAge(opp);
+        var t = Math.min(1, age / LIFECYCLE_DAYS);
+        var color = freshColor(t);
+        var label = ageLabel(age);
 
-        if (!classifications || !classifications.length) {
-            // Fallback: render raw description at normal tier
-            var p = document.createElement('p');
-            p.className = 'listing-description tier-normal';
-            p.textContent = opportunity.description_cleaned || opportunity.description || '';
-            container.appendChild(p);
+        var fresh = document.createElement('div');
+        fresh.className = 'pp-fresh';
+
+        var freshLbl = document.createElement('span');
+        freshLbl.className = 'pp-fresh-lbl';
+        freshLbl.style.color = color;
+        freshLbl.textContent = label;
+        fresh.appendChild(freshLbl);
+
+        var track = document.createElement('div');
+        track.className = 'pp-fresh-track';
+        fresh.appendChild(track);
+
+        var fill = document.createElement('div');
+        fill.className = 'pp-fresh-fill';
+        fill.style.width = (t * 100) + '%';
+        fill.style.background = color;
+        track.appendChild(fill);
+
+        [7, 14, 21].forEach(function(day) {
+            var tick = document.createElement('div');
+            tick.className = 'pp-fresh-tick';
+            tick.style.left = ((day / LIFECYCLE_DAYS) * 100) + '%';
+            track.appendChild(tick);
+        });
+
+        var marker = document.createElement('div');
+        marker.className = 'pp-fresh-marker';
+        marker.style.left = (t * 100) + '%';
+        marker.style.background = color;
+        track.appendChild(marker);
+
+        return fresh;
+    }
+
+    function buildFeedActions(opp) {
+        var div = document.createElement('div');
+        div.className = 'pp-actions';
+
+        if (isAuthenticated()) {
+            var saveBtn = document.createElement('button');
+            saveBtn.className = 'pp-action-btn pp-action-save' + (state.savedIds.has(opp.id) ? ' is-active' : '');
+            saveBtn.type = 'button';
+            saveBtn.textContent = 'Save';
+            saveBtn.onclick = function(e) {
+                e.stopPropagation();
+                recordStatus(opp, 'todo', saveBtn);
+            };
+
+            var applyBtn = document.createElement('button');
+            applyBtn.className = 'pp-action-btn pp-action-apply' + (state.appliedIds.has(opp.id) ? ' is-active' : '');
+            applyBtn.type = 'button';
+            applyBtn.textContent = 'Applied';
+            applyBtn.onclick = function(e) {
+                e.stopPropagation();
+                recordStatus(opp, 'applied', applyBtn);
+            };
+
+            var passBtn = document.createElement('button');
+            passBtn.className = 'pp-action-btn pp-action-pass';
+            passBtn.type = 'button';
+            passBtn.textContent = 'Pass';
+            passBtn.onclick = function(e) {
+                e.stopPropagation();
+                recordStatus(opp, 'ignored', passBtn);
+                renderListings();
+            };
+
+            div.appendChild(saveBtn);
+            div.appendChild(applyBtn);
+            div.appendChild(passBtn);
+        }
+
+        var link = document.createElement('a');
+        link.className = 'pp-action-link';
+        link.href = opp.url || '#';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'View original ↗';
+        div.appendChild(link);
+        return div;
+    }
+
+    function buildSwipeRow() {
+        var row = document.createElement('div');
+        row.className = 'pp-swipe-row';
+
+        var pass = document.createElement('div');
+        pass.className = 'pp-swipe-row-pass';
+        pass.textContent = '← swipe to pass';
+
+        var mid = document.createElement('div');
+        mid.className = 'pp-swipe-row-mid';
+
+        var save = document.createElement('div');
+        save.className = 'pp-swipe-row-save';
+        save.textContent = 'save →';
+
+        row.appendChild(pass);
+        row.appendChild(mid);
+        row.appendChild(save);
+        return row;
+    }
+
+    function recordStatus(opp, status, btn) {
+        if (status === 'todo') {
+            state.savedIds.add(opp.id);
+            state.passedIds.delete(opp.id);
+            saveLocalSet('savedIds');
+            saveLocalSet('passedIds');
+        }
+        if (status === 'applied') {
+            state.appliedIds.add(opp.id);
+            state.savedIds.delete(opp.id);
+            state.passedIds.delete(opp.id);
+            saveLocalSet('appliedIds');
+            saveLocalSet('savedIds');
+            saveLocalSet('passedIds');
+        }
+        if (status === 'ignored') {
+            state.passedIds.add(opp.id);
+            state.savedIds.delete(opp.id);
+            state.appliedIds.delete(opp.id);
+            saveLocalSet('passedIds');
+            saveLocalSet('savedIds');
+            saveLocalSet('appliedIds');
+        }
+
+        if (btn) btn.classList.add('is-active');
+        updateMobileCounts();
+
+        if (isAuthenticated() && window.api.updateOpportunityStatus) {
+            window.api.updateOpportunityStatus(opp.id, status).catch(console.error);
+        }
+    }
+
+    function createListingCard(opp, mode) {
+        var wrap = document.createElement('div');
+        wrap.className = 'pp-card-wrap';
+        wrap.setAttribute('data-opportunity-id', opp.id);
+
+        var scoreEl = document.createElement('div');
+        scoreEl.className = 'pp-score' + (isHot(opp) ? ' is-hot' : '');
+        scoreEl.textContent = Math.round(opp.score || 0);
+        wrap.appendChild(scoreEl);
+
+        if (mode === 'swipe') {
+            var swipeBg = document.createElement('div');
+            swipeBg.className = 'pp-swipe-bg';
+            wrap.appendChild(swipeBg);
+        }
+
+        var card = document.createElement('div');
+        card.className = 'pp-card paper-card';
+
+        var head = document.createElement('div');
+        head.className = 'pp-card-head';
+
+        var titleArea = document.createElement('div');
+        titleArea.className = 'pp-title-area';
+
+        var title = document.createElement('h2');
+        title.className = 'pp-card-title';
+        title.textContent = opp.title || 'Untitled role';
+        titleArea.appendChild(title);
+
+        var coRow = document.createElement('div');
+        coRow.className = 'pp-co-row';
+
+        var coName = document.createElement('span');
+        coName.className = 'pp-co-name';
+        coName.textContent = opp.company_name || 'Unknown Company';
+
+        var coTag = document.createElement('span');
+        coTag.className = 'pp-co-tag';
+        coTag.textContent = getLocation(opp) || (opp.source ? opp.source.replace(/_/g, ' ') : '');
+
+        coRow.appendChild(coName);
+        coRow.appendChild(coTag);
+        titleArea.appendChild(coRow);
+
+        var dataGrid = document.createElement('div');
+        dataGrid.className = 'pp-data-grid';
+
+        var sal = formatSalary(opp.salary_min, opp.salary_max, opp.salary_raw);
+        appendDataCell(dataGrid, 'pp-data-lbl', 'SALARY');
+        appendDataCell(dataGrid, 'pp-data-sal', sal);
+        appendDataCell(dataGrid, 'pp-data-lbl', 'LOCATION');
+        appendDataCell(dataGrid, 'pp-data-loc', getLocation(opp) || '—');
+        titleArea.appendChild(dataGrid);
+
+        head.appendChild(titleArea);
+        head.appendChild(buildFreshBar(opp));
+        card.appendChild(head);
+
+        var body = document.createElement('div');
+        body.className = 'pp-card-body';
+
+        var bullets = getBullets(opp);
+        if (bullets.length) {
+            var ul = document.createElement('ul');
+            ul.className = 'pp-bullets';
+            bullets.forEach(function(text) {
+                var li = document.createElement('li');
+                li.textContent = text;
+                ul.appendChild(li);
+            });
+            body.appendChild(ul);
+        } else if (mode === 'feed') {
+            var description = document.createElement('div');
+            description.className = 'pp-description';
+            renderDescription(opp, description);
+            body.appendChild(description);
+        }
+
+        if (mode === 'feed') {
+            body.appendChild(buildFeedActions(opp));
+        }
+
+        if (mode === 'swipe') {
+            var readBtn = document.createElement('button');
+            readBtn.className = 'pp-read-btn';
+            readBtn.type = 'button';
+            readBtn.textContent = 'Read full posting →';
+            readBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openOverlay(opp);
+            });
+            body.appendChild(readBtn);
+            body.appendChild(buildSwipeRow());
+        }
+
+        card.appendChild(body);
+        wrap.appendChild(card);
+
+        if (mode === 'swipe') {
+            var saveStamp = document.createElement('div');
+            saveStamp.className = 'pp-stamp for-save';
+            saveStamp.textContent = 'SAVE';
+            var passStamp = document.createElement('div');
+            passStamp.className = 'pp-stamp for-pass';
+            passStamp.textContent = 'PASS';
+            card.appendChild(saveStamp);
+            card.appendChild(passStamp);
+        }
+
+        card.addEventListener('click', function(e) {
+            if (e.target.closest('a, button, .pp-stamp')) return;
+            body.classList.toggle('is-open');
+            card.classList.toggle('is-expanded', body.classList.contains('is-open'));
+        });
+
+        if (mode === 'swipe') {
+            attachSwipe(wrap, opp);
+        }
+
+        return wrap;
+    }
+
+    function appendDataCell(parent, className, text) {
+        var span = document.createElement('span');
+        span.className = className;
+        span.textContent = text;
+        parent.appendChild(span);
+    }
+
+    function getFilteredListings() {
+        var authed = isAuthenticated();
+
+        return state.listings.filter(function(opp) {
+            if (state.statusFilter === 'all' && state.passedIds.has(opp.id)) return false;
+
+            if (!authed) {
+                if (state.statusFilter === 'saved' && !state.savedIds.has(opp.id)) return false;
+                if (state.statusFilter === 'applied' && !state.appliedIds.has(opp.id)) return false;
+            }
+
+            return matchesCategory(opp, state.category);
+        });
+    }
+
+    function clearListingList() {
+        if (!els.companyList) return;
+        Array.from(els.companyList.children).forEach(function(child) {
+            if (child.id !== 'skeleton-list') child.remove();
+        });
+    }
+
+    function renderListings() {
+        var filtered = getFilteredListings();
+
+        if (state.isMobile) {
+            var feed = document.getElementById('m-feed');
+            if (!feed) return;
+            feed.innerHTML = '';
+
+            if (!filtered.length) {
+                var empty = document.createElement('div');
+                empty.className = 'm-empty';
+                empty.innerHTML = '<div class="m-empty-title">That&apos;s a wrap.</div><div class="m-empty-sub">Fresh listings are pulled at dawn.</div>';
+                feed.appendChild(empty);
+                updateMobileCounts();
+                return;
+            }
+
+            filtered.forEach(function(opp) {
+                feed.appendChild(createListingCard(opp, 'swipe'));
+            });
+            updateMobileCounts();
             return;
         }
 
-        // Group consecutive sentences by tier for cleaner rendering
-        var groups = [];
-        var currentGroup = null;
+        if (!els.companyList) return;
+        if (els.skeletonList) els.skeletonList.classList.add('is-hidden');
+        clearListingList();
 
-        classifications.forEach(function(item) {
-            if (currentGroup && currentGroup.tier === item.tier) {
-                currentGroup.sentences.push(item.text);
-            } else {
-                currentGroup = { tier: item.tier, sentences: [item.text] };
-                groups.push(currentGroup);
-            }
+        if (!filtered.length) {
+            var desktopEmpty = document.createElement('p');
+            desktopEmpty.className = 'empty-state';
+            desktopEmpty.textContent = 'No listings match these filters right now.';
+            els.companyList.appendChild(desktopEmpty);
+            updateResultsCaption(0);
+            return;
+        }
+
+        filtered.forEach(function(opp, index) {
+            var card = createListingCard(opp, 'feed');
+            card.style.animationDelay = Math.min(index * 25, 350) + 'ms';
+            els.companyList.appendChild(card);
         });
 
-        groups.forEach(function(group) {
-            var p = document.createElement('p');
-            p.className = 'listing-description';
-
-            if (group.tier === 'highlight') {
-                // Each highlighted sentence gets its own span for the marker effect
-                group.sentences.forEach(function(sentence, i) {
-                    if (i > 0) p.appendChild(document.createTextNode(' '));
-                    var span = document.createElement('span');
-                    span.className = 'tier-highlight';
-                    span.textContent = sentence;
-                    p.appendChild(span);
-                });
-            } else {
-                p.classList.add('tier-' + group.tier.replace('_', '-'));
-                p.textContent = group.sentences.join(' ');
-            }
-
-            container.appendChild(p);
-        });
+        updateResultsCaption(filtered.length);
     }
 
-    var undoState = { timer: null, opportunityId: null, element: null };
+    function updateResultsCaption(count) {
+        if (!els.resultsCaption) return;
 
-    function ignoreOpportunity(opportunity) {
-        // Find and animate out the listing element
-        var listingEl = document.querySelector('[data-opportunity-id="' + opportunity.id + '"]');
-        if (listingEl) {
-            listingEl.style.transition = 'opacity 200ms ease, max-height 300ms ease';
-            listingEl.style.opacity = '0';
-            listingEl.style.maxHeight = listingEl.scrollHeight + 'px';
-            requestAnimationFrame(function() {
-                listingEl.style.maxHeight = '0';
-                listingEl.style.overflow = 'hidden';
-            });
+        if (state.listings.length === 0) {
+            els.resultsCaption.textContent = `No active listings found at score ${state.minScore}+`;
+            return;
         }
 
-        // Track ignored id for client-side filtering in All Jobs view
-        ignoredIds.add(opportunity.id);
-
-        // Clear any existing undo timer (previous ignore becomes permanent)
-        if (undoState.timer) {
-            clearTimeout(undoState.timer);
-            finalizeIgnore(undoState.opportunityId);
-        }
-
-        // Show toast
-        var toast = document.getElementById('undo-toast');
-        var toastText = document.getElementById('undo-toast-text');
-        toastText.textContent = '"' + (opportunity.title || 'Job') + '" ignored.';
-        toast.classList.remove('is-hidden');
-
-        // Store undo state
-        undoState.opportunityId = opportunity.id;
-        undoState.element = listingEl;
-
-        // Auto-dismiss after 5 seconds
-        undoState.timer = setTimeout(function() {
-            toast.classList.add('is-hidden');
-            finalizeIgnore(opportunity.id);
-            undoState = { timer: null, opportunityId: null, element: null };
-        }, 5000);
-    }
-
-    function finalizeIgnore(opportunityId) {
-        window.api.updateOpportunityStatus(opportunityId, 'ignored').catch(function(err) {
-            console.error('Failed to ignore:', err);
-        });
-    }
-
-    async function updateStatus(opportunity, status, activeBtn, otherBtn) {
-        try {
-            await window.api.updateOpportunityStatus(opportunity.id, status);
-            activeBtn.classList.add('is-active');
-            if (otherBtn) otherBtn.classList.remove('is-active');
-        } catch (err) {
-            console.error('Failed to update status:', err);
-        }
-    }
-
-    function createDetailActions(opportunity, detailInner) {
-        var actionsDiv = document.createElement('div');
-        actionsDiv.className = 'listing-detail-actions';
-
-        // Auth-gated buttons: Save, Applied, Ignore
-        if (window.api.isAuthenticated()) {
-            var saveBtn = document.createElement('button');
-            saveBtn.className = 'action-btn action-btn--save';
-            saveBtn.textContent = 'Save';
-            saveBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                updateStatus(opportunity, 'todo', saveBtn, appliedBtn);
-            });
-
-            var appliedBtn = document.createElement('button');
-            appliedBtn.className = 'action-btn action-btn--applied';
-            appliedBtn.textContent = 'Applied';
-            appliedBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                updateStatus(opportunity, 'applied', appliedBtn, saveBtn);
-            });
-
-            var ignoreBtn = document.createElement('button');
-            ignoreBtn.className = 'action-btn action-btn--ignore';
-            ignoreBtn.textContent = 'Ignore';
-            ignoreBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                ignoreOpportunity(opportunity);
-            });
-
-            actionsDiv.appendChild(saveBtn);
-            actionsDiv.appendChild(appliedBtn);
-            actionsDiv.appendChild(ignoreBtn);
-        }
-
-        // View original link — always visible (not gated behind auth)
-        var viewLink = document.createElement('a');
-        viewLink.className = 'action-link';
-        viewLink.href = opportunity.url || '#';
-        viewLink.target = '_blank';
-        viewLink.rel = 'noopener noreferrer';
-        viewLink.textContent = 'View original ↗';
-
-        actionsDiv.appendChild(viewLink);
-        detailInner.appendChild(actionsDiv);
-    }
-
-    function createListingElement(opportunity, allDetails) {
-        const details = document.createElement('details');
-        details.className = 'listing-item';
-        details.setAttribute('data-opportunity-id', opportunity.id);
-
-        const summary = document.createElement('summary');
-        summary.className = 'listing-summary';
-
-        const scoreBadge = document.createElement('div');
-        scoreBadge.className = 'score-badge';
-        const { background: scoreBg, color: scoreColor } = scoreStyles(opportunity.score || 0);
-        scoreBadge.style.background = scoreBg;
-        scoreBadge.style.color = scoreColor;
-        const scoreNum = document.createElement('span');
-        scoreNum.textContent = Math.round(opportunity.score || 0);
-        const scoreLabel = document.createElement('span');
-        scoreLabel.className = 'score-badge-label';
-        scoreLabel.textContent = 'score';
-        scoreBadge.appendChild(scoreNum);
-        scoreBadge.appendChild(scoreLabel);
-
-        const info = document.createElement('div');
-        info.className = 'listing-info';
-
-        const role = document.createElement('p');
-        role.className = 'listing-role';
-        role.textContent = opportunity.title || 'Untitled role';
-
-        const company = document.createElement('p');
-        company.className = 'listing-company';
-        company.textContent = opportunity.company_name || 'Unknown Company';
-
-        info.appendChild(role);
-        info.appendChild(company);
-
-        const pills = document.createElement('div');
-        pills.className = 'listing-pills';
-        info.appendChild(pills);
-
-        const aside = document.createElement('div');
-        aside.className = 'listing-aside';
-
-        if (isNewListing(opportunity)) {
-            const newPill = document.createElement('span');
-            newPill.className = 'pill-new';
-            newPill.textContent = 'NEW';
-            aside.appendChild(newPill);
-        }
-
-        const salary = document.createElement('span');
-        salary.className = 'listing-salary';
-        salary.textContent = formatSalary(opportunity.salary_min, opportunity.salary_max, opportunity.salary_raw);
-        aside.appendChild(salary);
-
-        const chevron = document.createElement('span');
-        chevron.className = 'summary-chevron';
-        chevron.textContent = '›';
-        aside.appendChild(chevron);
-
-        summary.appendChild(scoreBadge);
-        summary.appendChild(info);
-        summary.appendChild(aside);
-
-        const detail = document.createElement('div');
-        detail.className = 'listing-detail';
-
-        const detailInner = document.createElement('div');
-        detailInner.className = 'listing-detail-inner';
-
-        const postedDate = opportunity.posted_date || opportunity.first_seen;
-        const postedMeta = document.createElement('p');
-        postedMeta.className = 'listing-meta';
-        postedMeta.textContent = `Posted ${fmtDate(postedDate)} · First seen ${fmtDate(opportunity.first_seen)}`;
-
-        const actions = document.createElement('div');
-        actions.className = 'listing-actions';
-
-        const applyLink = document.createElement('a');
-        applyLink.className = 'apply-btn';
-        applyLink.textContent = 'Apply';
-
-        if (opportunity.url) {
-            applyLink.href = opportunity.url;
-            applyLink.target = '_blank';
-            applyLink.rel = 'noopener noreferrer';
-        } else {
-            applyLink.classList.add('is-disabled');
-            applyLink.removeAttribute('href');
-            applyLink.textContent = 'No link available';
-        }
-
-        actions.appendChild(applyLink);
-        detailInner.appendChild(postedMeta);
-        createDetailActions(opportunity, detailInner);
-        renderDescription(opportunity, detailInner);
-        detailInner.appendChild(actions);
-        detail.appendChild(detailInner);
-
-        details.appendChild(summary);
-        details.appendChild(detail);
-
-        summary.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (details.open) {
-                details.open = false;
-                animateDetailClose(details, detail);
-            } else {
-                allDetails.forEach((item) => {
-                    if (item !== details && item.open) {
-                        const otherDetail = item.querySelector('.listing-detail');
-                        if (otherDetail) animateDetailClose(item, otherDetail);
-                        item.open = false;
-                    }
-                });
-                details.open = true;
-                animateDetailOpen(detail);
-            }
-        });
-
-        return details;
+        els.resultsCaption.textContent =
+            `Showing ${fmtInteger(count)} of ${fmtInteger(state.listings.length)} active listings at score ${state.minScore}+`;
     }
 
     function updateSummary() {
@@ -562,23 +770,13 @@
         if (els.summaryTotal) els.summaryTotal.textContent = fmtInteger(totalListings);
         if (els.summaryCompanies) els.summaryCompanies.textContent = fmtInteger(companyCount);
         if (els.summaryNew) els.summaryNew.textContent = fmtInteger(newCount);
-        
-        if (els.resultsCaption) {
-            if (totalListings === 0) {
-                els.resultsCaption.textContent = `No active listings found at score ${state.minScore}+`;
-            } else {
-                els.resultsCaption.textContent =
-                    `Showing ${fmtInteger(totalListings)} active listings at score ${state.minScore}+`;
-            }
-        }
     }
 
     function renderFeaturedCompanies() {
         if (!els.companyTrack) return;
-        
-        // Pick top companies from currently loaded listings
+
         const counts = {};
-        state.listings.forEach(opp => {
+        state.listings.forEach(function(opp) {
             const name = (opp.company_name || '').trim();
             if (!name) return;
             counts[name] = (counts[name] || 0) + 1;
@@ -593,53 +791,7 @@
             return;
         }
 
-        els.companyTrack.innerHTML = '';
-        sorted.forEach(([name]) => {
-            const span = document.createElement('span');
-            span.className = 'company-logo-text';
-            span.textContent = name;
-            els.companyTrack.appendChild(span);
-        });
-    }
-
-    function renderListings() {
-        if (!els.companyList) return;
-        
-        // Clear previous results but keep skeleton if it's there
-        const listings = els.companyList.querySelectorAll('.listing-item, .empty-state');
-        listings.forEach(l => l.remove());
-
-        const filtered = state.listings.filter(opp => {
-            // In All Jobs view, hide client-side ignored entries
-            if (state.statusFilter === 'all' && ignoredIds.has(opp.id)) return false;
-
-            if (state.category === 'all') return true;
-            const desc = (opp.description || '').toLowerCase();
-            const title = (opp.title || '').toLowerCase();
-            const text = `${title} ${desc}`;
-
-            if (state.category === 'news') return text.includes('news') || text.includes('journal');
-            if (state.category === 'podcast') return text.includes('podcast') || text.includes('audio');
-            if (state.category === 'video') return text.includes('video') || text.includes('film') || text.includes('documentary');
-            if (state.category === 'social') return text.includes('social') || text.includes('tiktok') || text.includes('instagram');
-            return true;
-        });
-
-        if (filtered.length === 0) {
-            const empty = document.createElement('p');
-            empty.className = 'empty-state';
-            empty.textContent = 'No listings match these filters right now.';
-            els.companyList.appendChild(empty);
-            return;
-        }
-
-        const allDetails = [];
-        filtered.forEach((opportunity, index) => {
-            const listing = createListingElement(opportunity, allDetails);
-            listing.style.animationDelay = `${Math.min(index * 25, 350)}ms`;
-            allDetails.push(listing);
-            els.companyList.appendChild(listing);
-        });
+        els.companyTrack.textContent = sorted.map(function(item) { return item[0]; }).join(', ');
     }
 
     async function loadListings() {
@@ -672,6 +824,80 @@
         }
     }
 
+    function setCategory(category) {
+        if (!CATEGORIES.includes(category) || category === state.category) return;
+        state.category = category;
+        syncFilterControls();
+        renderListings();
+    }
+
+    function setStatusFilter(status) {
+        if (!STATUS_FILTERS.some(function(item) { return item.key === status; }) || status === state.statusFilter) return;
+        state.statusFilter = status;
+        syncFilterControls();
+        if (isAuthenticated()) {
+            loadListings();
+        } else {
+            renderListings();
+        }
+    }
+
+    function syncFilterControls() {
+        document.querySelectorAll('[data-category]').forEach(function(chip) {
+            chip.classList.toggle('is-active', chip.getAttribute('data-category') === state.category);
+        });
+
+        document.querySelectorAll('[data-status]').forEach(function(chip) {
+            chip.classList.toggle('is-active', chip.getAttribute('data-status') === state.statusFilter);
+        });
+    }
+
+    function updateStatusVisibility() {
+        syncFilterControls();
+    }
+
+    function renderMobileFilters() {
+        var el = document.getElementById('m-filters');
+        if (!el) return;
+
+        el.innerHTML = '';
+
+        CATEGORIES.forEach(function(key) {
+            var pill = document.createElement('button');
+            pill.type = 'button';
+            pill.className = 'm-filter-pill';
+            pill.setAttribute('data-category', key);
+            pill.textContent = CATEGORY_LABELS[key] || key;
+            pill.addEventListener('click', function() {
+                setCategory(key);
+            });
+            el.appendChild(pill);
+        });
+
+        STATUS_FILTERS.forEach(function(filter) {
+            var pill = document.createElement('button');
+            pill.type = 'button';
+            pill.className = 'm-filter-pill m-filter-pill--status';
+            pill.setAttribute('data-status', filter.key);
+            pill.setAttribute('data-mobile-status', 'true');
+            pill.textContent = filter.label;
+            pill.addEventListener('click', function() {
+                setStatusFilter(filter.key);
+            });
+            el.appendChild(pill);
+        });
+
+        syncFilterControls();
+        updateStatusVisibility();
+    }
+
+    function updateMobileCounts() {
+        var sEl = document.getElementById('m-saved-ct');
+        var pEl = document.getElementById('m-passed-ct');
+        if (sEl) sEl.textContent = state.savedIds.size + ' saved';
+        if (pEl) pEl.textContent = state.passedIds.size + ' passed';
+    }
+
     function bindEvents() {
         els.minScoreInput?.addEventListener('input', (e) => {
             const val = e.target.value;
@@ -687,33 +913,16 @@
         els.categoryChips?.addEventListener('click', (e) => {
             const chip = e.target.closest('.chip');
             if (!chip) return;
+            setCategory(chip.dataset.category);
+        });
 
-            const category = chip.dataset.category;
-            if (category === state.category) return;
-
-            state.category = category;
-            
-            // Update active state
-            els.categoryChips.querySelectorAll('.chip').forEach(c => c.classList.remove('is-active'));
-            chip.classList.add('is-active');
-            
-            renderListings();
+        els.statusChips?.addEventListener('click', function(e) {
+            var chip = e.target.closest('.chip');
+            if (!chip) return;
+            setStatusFilter(chip.getAttribute('data-status'));
         });
 
         els.refreshBtn?.addEventListener('click', () => {
-            loadListings();
-        });
-
-        document.getElementById('status-chips').addEventListener('click', function(e) {
-            var chip = e.target.closest('.chip');
-            if (!chip) return;
-
-            document.querySelectorAll('#status-chips .chip').forEach(function(c) {
-                c.classList.remove('is-active');
-            });
-            chip.classList.add('is-active');
-
-            state.statusFilter = chip.getAttribute('data-status');
             loadListings();
         });
 
@@ -742,61 +951,46 @@
         });
     }
 
-    document.addEventListener('pp:auth-changed', function(e) {
-        var detail = e.detail || {};
-        var isAuth = detail.isAuthenticated;
-        var user = detail.user;
+    function handleAuthChanged(detail) {
+        var isAuth = detail && detail.isAuthenticated;
+        var user = detail && detail.user;
 
         var greeting = document.getElementById('user-greeting');
         var signInBtn = document.getElementById('sign-in-btn');
         var signOutBtn = document.getElementById('sign-out-btn');
 
         if (isAuth && user) {
-            greeting.textContent = user.email || '';
-            greeting.classList.remove('is-hidden');
-            signOutBtn.classList.remove('is-hidden');
-            signInBtn.classList.add('is-hidden');
+            if (greeting) greeting.textContent = user.email || '';
+            greeting?.classList.remove('is-hidden');
+            signOutBtn?.classList.remove('is-hidden');
+            signInBtn?.classList.add('is-hidden');
         } else {
-            greeting.classList.add('is-hidden');
-            signOutBtn.classList.add('is-hidden');
-            signInBtn.classList.remove('is-hidden');
+            greeting?.classList.add('is-hidden');
+            signOutBtn?.classList.add('is-hidden');
+            signInBtn?.classList.remove('is-hidden');
         }
 
-        // Toggle newsletter form visibility
         var newsletterForm = document.getElementById('newsletter-form');
-        if (isAuth) {
-            newsletterForm.classList.add('is-hidden');
-        } else {
-            newsletterForm.classList.remove('is-hidden');
+        if (newsletterForm) {
+            newsletterForm.classList.toggle('is-hidden', Boolean(isAuth));
         }
 
-        // Toggle status filter chips visibility
-        var statusGroup = document.getElementById('status-filter-group');
-        if (isAuth) {
-            statusGroup.classList.remove('is-hidden');
-        } else {
-            statusGroup.classList.add('is-hidden');
-            state.statusFilter = 'all';
-        }
-    });
+        updateStatusVisibility();
+        updateMobileCounts();
 
-    document.addEventListener('DOMContentLoaded', function() {
+        if (isAuth) {
+            syncLocalStatusToServer();
+        }
+
+        renderListings();
+    }
+
+    function bindDomReadyEvents() {
         var undoToastBtn = document.getElementById('undo-toast-btn');
         if (undoToastBtn) {
             undoToastBtn.addEventListener('click', function() {
-                if (undoState.timer) clearTimeout(undoState.timer);
-
-                // Restore the element
-                if (undoState.element) {
-                    undoState.element.style.transition = 'opacity 200ms ease, max-height 300ms ease';
-                    undoState.element.style.opacity = '1';
-                    undoState.element.style.maxHeight = '';
-                    undoState.element.style.overflow = '';
-                }
-
-                // Hide toast
-                document.getElementById('undo-toast').classList.add('is-hidden');
-                undoState = { timer: null, opportunityId: null, element: null };
+                var toast = document.getElementById('undo-toast');
+                if (toast) toast.classList.add('is-hidden');
             });
         }
 
@@ -824,7 +1018,8 @@
         var otpSubmit = document.getElementById('otp-submit');
         if (otpSubmit) {
             otpSubmit.addEventListener('click', async function() {
-                var code = document.getElementById('otp-input').value.trim();
+                var input = document.getElementById('otp-input');
+                var code = input ? input.value.trim() : '';
                 var email = state.pendingAuthEmail;
                 if (!code || !email) return;
 
@@ -838,20 +1033,246 @@
                         if (window.authFunctions) {
                             window.authFunctions.updateAuthUI();
                         }
-                        document.getElementById('otp-section').classList.add('is-hidden');
-                        document.getElementById('newsletter-form').classList.add('is-hidden');
+                        document.getElementById('otp-section')?.classList.add('is-hidden');
+                        document.getElementById('newsletter-form')?.classList.add('is-hidden');
                     }
                 } catch (err) {
                     var status = document.getElementById('otp-status');
+                    if (!status) return;
                     status.textContent = 'Invalid code. Try again.';
                     status.classList.remove('is-hidden');
                     status.classList.add('newsletter-status--error');
                 }
             });
         }
+    }
+
+    function attachSwipe(wrap, opp) {
+        var card = wrap.querySelector('.pp-card');
+        var swipeBg = wrap.querySelector('.pp-swipe-bg');
+        var saveStamp = wrap.querySelector('.pp-stamp.for-save');
+        var passStamp = wrap.querySelector('.pp-stamp.for-pass');
+        if (!card || !swipeBg) return;
+
+        let sx = 0;
+        let sy = 0;
+        let st = 0;
+        let dragging = false;
+        let pid = null;
+
+        function resetSwipe() {
+            card.style.cssText = 'transition: transform 0.32s cubic-bezier(.2,.9,.3,1.2)';
+            swipeBg.className = 'pp-swipe-bg';
+            swipeBg.innerHTML = '';
+            saveStamp?.classList.remove('is-visible');
+            passStamp?.classList.remove('is-visible');
+        }
+
+        card.addEventListener('pointerdown', function(e) {
+            if (e.target.closest('.pp-read-btn, .pp-swipe-row, a, button')) return;
+            sx = e.clientX;
+            sy = e.clientY;
+            st = Date.now();
+            dragging = true;
+            pid = e.pointerId;
+            card.setPointerCapture(e.pointerId);
+        });
+
+        card.addEventListener('pointermove', function(e) {
+            if (!dragging || e.pointerId !== pid) return;
+            const dx = e.clientX - sx;
+            const dy = e.clientY - sy;
+
+            if (Math.abs(dy) > Math.abs(dx) + 8) {
+                dragging = false;
+                resetSwipe();
+                return;
+            }
+
+            const tilt = dx * 0.03;
+            const opacity = Math.max(0.3, 1 - Math.abs(dx) / 400);
+            card.style.cssText = `transform:translateX(${dx}px) rotate(${tilt}deg);opacity:${opacity};transition:none`;
+            const stampOpacity = Math.min(1, Math.abs(dx) / 80);
+
+            if (dx > 2) {
+                swipeBg.className = 'pp-swipe-bg for-save';
+                swipeBg.innerHTML = `<span class="pp-swipe-hint for-save" style="opacity:${stampOpacity}">→ SAVE</span>`;
+                saveStamp?.classList.add('is-visible');
+                passStamp?.classList.remove('is-visible');
+            } else if (dx < -2) {
+                swipeBg.className = 'pp-swipe-bg for-pass';
+                swipeBg.innerHTML = `<span class="pp-swipe-hint for-pass" style="opacity:${stampOpacity}">PASS ←</span>`;
+                passStamp?.classList.add('is-visible');
+                saveStamp?.classList.remove('is-visible');
+            } else {
+                swipeBg.className = 'pp-swipe-bg';
+                swipeBg.innerHTML = '';
+                saveStamp?.classList.remove('is-visible');
+                passStamp?.classList.remove('is-visible');
+            }
+        });
+
+        const onEnd = function(e) {
+            if (!dragging) return;
+            dragging = false;
+            const dx = e.clientX - sx;
+            const dt = Date.now() - st;
+            const isTap = Math.abs(dx) < 6 && dt < 250;
+
+            if (isTap) {
+                resetSwipe();
+            } else if (Math.abs(dx) > 80) {
+                doSwipe(wrap, card, opp, dx > 0 ? 'save' : 'pass', dx);
+            } else {
+                resetSwipe();
+            }
+        };
+
+        card.addEventListener('pointerup', onEnd);
+        card.addEventListener('pointercancel', function() {
+            dragging = false;
+            resetSwipe();
+        });
+    }
+
+    function doSwipe(wrap, card, opp, dir, dx) {
+        var stamp = card.querySelector('.pp-stamp.for-' + dir);
+        if (stamp) {
+            stamp.textContent = dir === 'save' ? 'SAVED' : 'PASSED';
+            stamp.classList.add('is-visible');
+        }
+
+        const flyX = dx > 0 ? 420 : -420;
+        card.style.cssText = `transform:translateX(${flyX}px) rotate(${flyX * 0.03}deg);opacity:0;transition:transform 0.28s ease-out,opacity 0.28s ease-out`;
+
+        setTimeout(function() {
+            recordStatus(opp, dir === 'save' ? 'todo' : 'ignored');
+            const h = wrap.scrollHeight;
+            wrap.style.cssText = `max-height:${h}px;overflow:hidden;transition:max-height 0.28s ease`;
+            requestAnimationFrame(function() {
+                wrap.style.maxHeight = '0';
+            });
+            setTimeout(function() {
+                wrap.remove();
+                updateMobileCounts();
+            }, 300);
+        }, 280);
+    }
+
+    function openOverlay(opp) {
+        const overlay = document.getElementById('m-overlay');
+        const flipper = document.getElementById('m-overlay-flipper');
+        const content = document.getElementById('m-overlay-content');
+        if (!overlay || !flipper || !content) return;
+
+        const hot = isHot(opp);
+        const sal = formatSalary(opp.salary_min, opp.salary_max, opp.salary_raw);
+        const loc = getLocation(opp);
+        const desc = normalizeDescription(opp.description_cleaned || opp.description || '');
+
+        content.innerHTML = '';
+
+        const bar = document.createElement('div');
+        bar.className = 'm-overlay-bar';
+
+        const backBtn = document.createElement('button');
+        backBtn.className = 'm-overlay-back';
+        backBtn.type = 'button';
+        backBtn.innerHTML = '<span class="m-overlay-back-icon">↺</span><span class="m-overlay-back-lbl">Back to card</span>';
+        backBtn.addEventListener('click', closeOverlay);
+
+        const barTitle = document.createElement('div');
+        barTitle.className = 'm-overlay-bar-title';
+        barTitle.textContent = 'Full Posting';
+
+        bar.appendChild(backBtn);
+        bar.appendChild(barTitle);
+        content.appendChild(bar);
+
+        const body = document.createElement('div');
+        body.className = 'm-overlay-body';
+
+        const co = document.createElement('div');
+        co.className = 'm-overlay-co' + (hot ? ' is-hot' : '');
+        co.textContent = opp.company_name || '';
+        body.appendChild(co);
+
+        const title = document.createElement('div');
+        title.className = 'm-overlay-title';
+        title.textContent = opp.title || '';
+        body.appendChild(title);
+
+        const meta = document.createElement('div');
+        meta.className = 'm-overlay-meta';
+        meta.textContent = [loc, sal, fmtDate(opp.posted_date || opp.first_seen)].filter(Boolean).join(' · ');
+        body.appendChild(meta);
+
+        const textEl = document.createElement('div');
+        textEl.className = 'm-overlay-text';
+        textEl.textContent = desc;
+        body.appendChild(textEl);
+
+        if (opp.url) {
+            const apply = document.createElement('a');
+            apply.className = 'm-overlay-apply';
+            apply.href = opp.url;
+            apply.target = '_blank';
+            apply.rel = 'noopener noreferrer';
+            apply.textContent = 'View Original Posting ↗';
+            body.appendChild(apply);
+        }
+
+        content.appendChild(body);
+
+        overlay.classList.add('is-visible');
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                flipper.classList.add('is-open');
+            });
+        });
+    }
+
+    function closeOverlay() {
+        const flipper = document.getElementById('m-overlay-flipper');
+        const overlay = document.getElementById('m-overlay');
+        if (!flipper || !overlay) return;
+        flipper.classList.remove('is-open');
+        flipper.classList.add('is-exiting');
+        setTimeout(function() {
+            flipper.classList.remove('is-exiting');
+            overlay.classList.remove('is-visible');
+        }, 520);
+    }
+
+    async function fetchPublicCounters() {
+        try {
+            const data = await window.api.getPublicStats();
+            if (els.summary7d && data.opportunities_added_7d != null) {
+                els.summary7d.textContent = fmtInteger(data.opportunities_added_7d);
+            }
+            if (els.summaryTotal && data.active_opportunities != null) {
+                els.summaryTotal.textContent = fmtInteger(data.active_opportunities);
+            }
+            if (els.summaryCompanies && data.active_companies != null) {
+                els.summaryCompanies.textContent = fmtInteger(data.active_companies);
+            }
+            if (els.summaryNew && data.opportunities_added_24h != null) {
+                els.summaryNew.textContent = fmtInteger(data.opportunities_added_24h);
+            }
+        } catch {
+        }
+    }
+
+    document.addEventListener('pp:auth-changed', function(e) {
+        handleAuthChanged(e.detail || {});
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', function() {
+        loadLocalSets();
+        renderMobileFilters();
+        updateMobileCounts();
+        bindDomReadyEvents();
+
         state.minScore = getInitialMinScore();
         if (els.minScoreInput) {
             els.minScoreInput.value = String(state.minScore);
@@ -859,32 +1280,18 @@
         }
         updateMinScoreInUrl(state.minScore);
         bindEvents();
+        updateStatusVisibility();
+        if (isAuthenticated()) {
+            syncLocalStatusToServer();
+        }
         loadListings();
         fetchPublicCounters();
     });
 
-    async function fetchPublicCounters() {
-        try {
-            const data = await window.api.getPublicStats();
-            const el7d = document.getElementById('summary-7d');
-            if (el7d && data.opportunities_added_7d != null) {
-                el7d.textContent = fmtInteger(data.opportunities_added_7d);
-            }
-            // Overwrite feed-derived counts with authoritative DB counts
-            const elTotal = document.getElementById('summary-total');
-            const elCompanies = document.getElementById('summary-companies');
-            const elNew = document.getElementById('summary-new');
-            if (elTotal && data.active_opportunities != null) {
-                elTotal.textContent = fmtInteger(data.active_opportunities);
-            }
-            if (elCompanies && data.active_companies != null) {
-                elCompanies.textContent = fmtInteger(data.active_companies);
-            }
-            if (elNew && data.opportunities_added_24h != null) {
-                elNew.textContent = fmtInteger(data.opportunities_added_24h);
-            }
-        } catch {
-            // counters stay at feed-derived values — non-fatal
-        }
-    }
+    var mq = window.matchMedia('(max-width: 767px)');
+    mq.addEventListener('change', function(e) {
+        if (state.isMobile === e.matches) return;
+        state.isMobile = e.matches;
+        renderListings();
+    });
 })();

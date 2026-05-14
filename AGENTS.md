@@ -66,7 +66,7 @@ producer-producer/
   - `js/list.js` (listings fetch, filter, render; also calls `/stats` for 4 public counters)
   - `js/api.js`, `js/auth.js`
   - `css/list.css`
-- Features: score filter slider, category chips, status chips (saved/applied), newsletter signup, OTP verification, company marquee, summary stats (Total Listings, Companies, New today, Added 7d).
+- Features: unified responsive editorial cards, score filter slider, category/status chips, newsletter signup, OTP verification, static hiring-company line, summary stats (Total Listings, Companies, New today, Added 7d).
 
 ### 2) Admin Dashboard (`/admin.html`) — Auth-gated
 

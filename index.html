@@ -8,7 +8,8 @@
     <title>Producer-Producer — Curated Media Jobs</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="css/list.css?v=20260408">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/list.css?v=20260514">
 </head>
 
 <body>
@@ -94,36 +95,6 @@
             </div>
         </section>
 
-        <section class="filter-bar">
-            <form class="threshold-form" id="threshold-form">
-                <div class="filter-group">
-                    <label for="min-score" class="filter-label">Min. Score</label>
-                    <div class="slider-container">
-                        <input type="range" id="min-score" min="0" max="100" step="1" value="75" class="score-slider">
-                        <span class="score-value" id="score-value">75</span>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <span class="filter-label">Categories</span>
-                    <div class="category-chips" id="category-chips">
-                        <button type="button" class="chip is-active" data-category="all">All</button>
-                        <button type="button" class="chip" data-category="news">News</button>
-                        <button type="button" class="chip" data-category="podcast">Podcast</button>
-                        <button type="button" class="chip" data-category="video">Video</button>
-                        <button type="button" class="chip" data-category="social">Social</button>
-                    </div>
-                </div>
-                <div class="filter-group filter-group--status is-hidden" id="status-filter-group">
-                    <span class="filter-label">View</span>
-                    <div class="status-chips" id="status-chips">
-                        <button type="button" class="chip is-active" data-status="all">All Jobs</button>
-                        <button type="button" class="chip" data-status="saved">Saved</button>
-                        <button type="button" class="chip" data-status="applied">Applied</button>
-                    </div>
-                </div>
-            </form>
-        </section>
-
         <section class="summary-stats">
             <div class="stat-item">
                 <span class="stat-value" id="summary-total">—</span>
@@ -143,20 +114,54 @@
             </div>
         </section>
 
-        <section class="company-list" id="company-list" aria-live="polite">
-            <div class="skeleton-list" id="skeleton-list">
-                <div class="skeleton-item"></div>
-                <div class="skeleton-item"></div>
-                <div class="skeleton-item"></div>
-                <div class="skeleton-item"></div>
-                <div class="skeleton-item"></div>
+        <div class="listings-content-area">
+            <div class="listings-main">
+                <section class="company-list" id="company-list" aria-live="polite">
+                    <div class="skeleton-list" id="skeleton-list">
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                    </div>
+                </section>
             </div>
-        </section>
+
+            <aside class="listings-rail" aria-label="Listing filters">
+                <form class="threshold-form" id="threshold-form">
+                    <div class="rail-section">
+                        <label for="min-score" class="rail-label">Min. Score</label>
+                        <div class="slider-container">
+                            <input type="range" id="min-score" min="0" max="100" step="1" value="75" class="score-slider">
+                            <span class="score-value" id="score-value">75</span>
+                        </div>
+                    </div>
+                    <div class="rail-section">
+                        <span class="rail-label">Category</span>
+                        <div class="rail-chips category-chips" id="category-chips">
+                            <button type="button" class="chip is-active" data-category="all">All</button>
+                            <button type="button" class="chip" data-category="news">News</button>
+                            <button type="button" class="chip" data-category="podcast">Podcast</button>
+                            <button type="button" class="chip" data-category="video">Video</button>
+                            <button type="button" class="chip" data-category="social">Social</button>
+                        </div>
+                    </div>
+                    <div class="rail-section" id="status-filter-group">
+                        <span class="rail-label">View</span>
+                        <div class="rail-chips status-chips" id="status-chips">
+                            <button type="button" class="chip is-active" data-status="all">All Jobs</button>
+                            <button type="button" class="chip" data-status="saved">Saved</button>
+                            <button type="button" class="chip" data-status="applied">Applied</button>
+                        </div>
+                    </div>
+                </form>
+            </aside>
+        </div>
     </main>
 
     <script src="js/api.js?v=20260430"></script>
     <script src="js/auth.js?v=20260408"></script>
-    <script src="js/list.js?v=20260430"></script>
+    <script src="js/list.js?v=20260514"></script>
     <script>
         (function () {
             document.addEventListener('keydown', function (e) {
@@ -168,6 +173,31 @@
             });
         })();
     </script>
+
+    <!-- Mobile listing experience -->
+    <div id="mobile-app" class="mobile-app">
+      <div class="m-header paper-bg">
+        <div class="m-wordmark">producer<span class="m-wordmark-dot">·</span>producer</div>
+        <div class="m-avatar paper-dark">JC</div>
+      </div>
+      <div class="m-callsheet-row paper-bg">
+        <span class="m-callsheet-label">Call Sheet</span>
+        <span class="m-callsheet-rule"></span>
+        <span class="m-callsheet-counts">
+          <span class="m-saved-ct" id="m-saved-ct">0 saved</span>
+          <span>·</span>
+          <span class="m-passed-ct" id="m-passed-ct">0 passed</span>
+        </span>
+      </div>
+      <div class="m-filters paper-bg" id="m-filters"></div>
+      <div class="m-feed paper-bg" id="m-feed"></div>
+    </div>
+    <!-- Full posting flip overlay (mobile) -->
+    <div id="m-overlay" class="m-overlay">
+      <div class="m-overlay-flipper" id="m-overlay-flipper">
+        <div class="m-overlay-face paper-bg" id="m-overlay-content"></div>
+      </div>
+    </div>
 
     <div class="undo-toast is-hidden" id="undo-toast">
         <span class="undo-toast-text" id="undo-toast-text"></span>
