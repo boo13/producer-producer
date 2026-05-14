@@ -201,9 +201,9 @@
 
     function jobAge(opp) {
         const ref = opp.first_seen || opp.posted_date;
-        if (!ref) return 0;
+        if (!ref) return null;
         const timestamp = new Date(ref).getTime();
-        if (Number.isNaN(timestamp)) return 0;
+        if (Number.isNaN(timestamp)) return null;
         return Math.max(0, Math.floor((Date.now() - timestamp) / 86400000));
     }
 
@@ -219,7 +219,7 @@
 
     function ageLabel(age) {
         if (age <= 1) return '◆ FRESH';
-        if (age >= LIFECYCLE_DAYS - 2) return 'EXPIRES SOON';
+        if (age >= LIFECYCLE_DAYS - 3) return 'EXPIRES SOON';
         if (age >= 14) return 'STALE';
         return `${age}d OLD`;
     }
@@ -410,6 +410,7 @@
 
     function buildFreshBar(opp) {
         var age = jobAge(opp);
+        if (age === null) return null;
         var t = Math.min(1, age / LIFECYCLE_DAYS);
         var color = freshColor(t);
         var label = ageLabel(age);
@@ -606,7 +607,8 @@
         titleArea.appendChild(dataGrid);
 
         head.appendChild(titleArea);
-        head.appendChild(buildFreshBar(opp));
+        var freshBar = buildFreshBar(opp);
+        if (freshBar) head.appendChild(freshBar);
         card.appendChild(head);
 
         var body = document.createElement('div');
