@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/list.css?v=20260514">
+    <link rel="stylesheet" href="css/list.css?v=20260625">
 </head>
 
 <body>
@@ -159,9 +159,37 @@
         </div>
     </main>
 
-    <script src="js/api.js?v=20260430"></script>
+    <div class="auth-dialog is-hidden" id="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title">
+        <button type="button" class="auth-dialog-backdrop" id="auth-dialog-backdrop" aria-label="Close sign in"></button>
+        <section class="auth-dialog-panel">
+            <button type="button" class="auth-dialog-close" id="auth-dialog-close" aria-label="Close sign in">×</button>
+            <p class="auth-dialog-kicker">Account access</p>
+            <h2 class="auth-dialog-title" id="auth-dialog-title">Sign in to save and track jobs.</h2>
+            <p class="auth-dialog-copy">We’ll email a 6-digit code for account access. Daily digest signup remains in the newsletter section.</p>
+
+            <form class="auth-form" id="auth-form" novalidate>
+                <label class="auth-label" for="auth-email">Email address</label>
+                <div class="newsletter-fields auth-fields">
+                    <input type="email" class="newsletter-email" id="auth-email" placeholder="your@email.com" autocomplete="email" required>
+                    <button type="submit" class="newsletter-submit">Send code</button>
+                </div>
+                <p class="newsletter-status is-hidden" id="auth-status"></p>
+            </form>
+
+            <div class="auth-otp-section is-hidden" id="auth-otp-section">
+                <label class="auth-label" for="auth-otp-input">6-digit code</label>
+                <div class="newsletter-fields auth-fields">
+                    <input type="text" class="newsletter-email" id="auth-otp-input" placeholder="000000" maxlength="6" autocomplete="one-time-code" inputmode="numeric">
+                    <button type="button" class="newsletter-submit" id="auth-otp-submit">Verify</button>
+                </div>
+                <p class="newsletter-status is-hidden" id="auth-otp-status"></p>
+            </div>
+        </section>
+    </div>
+
+    <script src="js/api.js?v=20260625"></script>
     <script src="js/auth.js?v=20260408"></script>
-    <script src="js/list.js?v=20260514b"></script>
+    <script src="js/list.js?v=20260625"></script>
     <script>
         (function () {
             document.addEventListener('keydown', function (e) {
@@ -178,7 +206,10 @@
     <div id="mobile-app" class="mobile-app">
       <div class="m-header paper-bg">
         <div class="m-wordmark">producer<span class="m-wordmark-dot">·</span>producer</div>
-        <div class="m-avatar paper-dark">JC</div>
+        <div class="m-account-controls">
+          <button type="button" class="m-sign-in-btn" id="m-sign-in-btn">Sign in</button>
+          <button type="button" class="m-avatar paper-dark is-hidden" id="m-account-btn" aria-label="Sign out"></button>
+        </div>
       </div>
       <div class="m-callsheet-row paper-bg">
         <span class="m-callsheet-label">Call Sheet</span>

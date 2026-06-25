@@ -459,7 +459,11 @@ class APIClient {
     async getOpportunitiesForMe(params = {}) {
         const queryParams = new URLSearchParams();
 
-        if (params.status) queryParams.append('status', params.status);
+        if (params.status_filter) {
+            queryParams.append('status_filter', params.status_filter);
+        } else if (params.status) {
+            queryParams.append('status_filter', params.status);
+        }
         if (params.min_score !== undefined) queryParams.append('min_score', params.min_score);
         if (params.limit) queryParams.append('limit', params.limit);
         if (params.offset) queryParams.append('offset', params.offset);

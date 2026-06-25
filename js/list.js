@@ -27,6 +27,7 @@
         statusFilter: 'all',
         listings: [],
         pendingAuthEmail: null,
+        pendingAuthContext: null,
         savedIds: new Set(),
         passedIds: new Set(),
         appliedIds: new Set(),
@@ -367,16 +368,35 @@
         });
     }
 
+    function normalizeUserOpportunity(item) {
+        if (!item || !item.opportunity) return null;
+
+        return {
+            ...item.opportunity,
+            score: item.score ?? item.opportunity.score,
+            user_status: item.status,
+            user_opportunity_id: item.id,
+        };
+    }
+
     async function fetchAllListings(minScore) {
         if (state.statusFilter !== 'all' && isAuthenticated()) {
             var statusMap = { saved: 'todo', applied: 'applied' };
             var params = {
-                min_score: minScore,
-                status: statusMap[state.statusFilter],
+                status_filter: statusMap[state.statusFilter],
                 limit: PAGE_SIZE,
             };
-            var results = await window.api.getOpportunitiesForMe(params);
-            return results || [];
+            var results = await window.api.getUserOpportunities(params);
+            var normalized = (results || []).map(normalizeUserOpportunity).filter(Boolean);
+
+            normalized.forEach(function(opp) {
+                if (opp.user_status === 'todo') state.savedIds.add(opp.id);
+                if (opp.user_status === 'applied') state.appliedIds.add(opp.id);
+            });
+            saveLocalSet('savedIds');
+            saveLocalSet('appliedIds');
+
+            return normalized;
         }
 
         const items = [];
@@ -547,7 +567,7 @@
         updateMobileCounts();
 
         if (isAuthenticated() && window.api.updateOpportunityStatus) {
-            window.api.updateOpportunityStatus(opp.id, status).catch(console.error);
+            window.api.updateOpportunityStatus(opp.id, status, { score: opp.score }).catch(console.error);
         }
     }
 
@@ -939,6 +959,7 @@
             try {
                 await window.api.requestMagicLink(email);
                 state.pendingAuthEmail = email;
+                state.pendingAuthContext = 'newsletter';
                 els.newsletterStatus.textContent = 'Check your inbox — enter the 6-digit code below.';
                 els.newsletterStatus.className = 'newsletter-status newsletter-status--success';
                 if (els.newsletterEmail) els.newsletterEmail.value = '';
@@ -960,16 +981,32 @@
         var greeting = document.getElementById('user-greeting');
         var signInBtn = document.getElementById('sign-in-btn');
         var signOutBtn = document.getElementById('sign-out-btn');
+        var mobileSignInBtn = document.getElementById('m-sign-in-btn');
+        var mobileAccountBtn = document.getElementById('m-account-btn');
 
         if (isAuth && user) {
             if (greeting) greeting.textContent = user.email || '';
             greeting?.classList.remove('is-hidden');
             signOutBtn?.classList.remove('is-hidden');
             signInBtn?.classList.add('is-hidden');
+            mobileSignInBtn?.classList.add('is-hidden');
+            if (mobileAccountBtn) {
+                var emailName = String(user.email || '').split('@')[0];
+                var initials = emailName
+                    .split(/[._-]+/)
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map(function(part) { return part.charAt(0).toUpperCase(); })
+                    .join('');
+                mobileAccountBtn.textContent = initials || 'ME';
+                mobileAccountBtn.classList.remove('is-hidden');
+            }
         } else {
             greeting?.classList.add('is-hidden');
             signOutBtn?.classList.add('is-hidden');
             signInBtn?.classList.remove('is-hidden');
+            mobileSignInBtn?.classList.remove('is-hidden');
+            mobileAccountBtn?.classList.add('is-hidden');
         }
 
         var newsletterForm = document.getElementById('newsletter-form');
@@ -985,6 +1022,48 @@
         }
 
         renderListings();
+    }
+
+    function openAuthDialog() {
+        var dialog = document.getElementById('auth-dialog');
+        if (!dialog) return;
+        dialog.classList.remove('is-hidden');
+        document.getElementById('auth-email')?.focus();
+    }
+
+    function closeAuthDialog() {
+        var dialog = document.getElementById('auth-dialog');
+        if (!dialog) return;
+        dialog.classList.add('is-hidden');
+    }
+
+    async function verifyOtp(inputId, statusId, context) {
+        var input = document.getElementById(inputId);
+        var status = document.getElementById(statusId);
+        var code = input ? input.value.trim() : '';
+        var email = state.pendingAuthEmail;
+
+        if (!code || !email || state.pendingAuthContext !== context) return;
+
+        try {
+            var result = await window.api.verifyOtpCode(email, code);
+            if (!result || !result.access_token) return;
+
+            if (window.authFunctions) {
+                window.authFunctions.updateAuthUI();
+            }
+
+            if (context === 'signin') {
+                closeAuthDialog();
+            } else {
+                document.getElementById('otp-section')?.classList.add('is-hidden');
+                document.getElementById('newsletter-form')?.classList.add('is-hidden');
+            }
+        } catch (err) {
+            if (!status) return;
+            status.textContent = 'Invalid code. Try again.';
+            status.className = 'newsletter-status newsletter-status--error';
+        }
     }
 
     function bindDomReadyEvents() {
@@ -1007,46 +1086,56 @@
 
         var signInBtn = document.getElementById('sign-in-btn');
         if (signInBtn) {
-            signInBtn.addEventListener('click', function() {
-                var form = document.getElementById('newsletter-form');
-                if (form) {
-                    form.scrollIntoView({ behavior: 'smooth' });
-                    var emailInput = document.getElementById('newsletter-email');
-                    if (emailInput) emailInput.focus();
-                }
-            });
+            signInBtn.addEventListener('click', openAuthDialog);
         }
+
+        document.getElementById('m-sign-in-btn')?.addEventListener('click', openAuthDialog);
+        document.getElementById('auth-dialog-close')?.addEventListener('click', closeAuthDialog);
+        document.getElementById('auth-dialog-backdrop')?.addEventListener('click', closeAuthDialog);
+        document.getElementById('m-account-btn')?.addEventListener('click', function() {
+            window.authFunctions?.logout();
+        });
+
+        document.getElementById('auth-form')?.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            var emailInput = document.getElementById('auth-email');
+            var status = document.getElementById('auth-status');
+            var email = emailInput ? emailInput.value.trim() : '';
+            if (!email || !status) return;
+
+            var submitBtn = event.currentTarget.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+
+            try {
+                await window.api.requestMagicLink(email);
+                state.pendingAuthEmail = email;
+                state.pendingAuthContext = 'signin';
+                status.textContent = 'Check your inbox for the 6-digit sign-in code.';
+                status.className = 'newsletter-status newsletter-status--success';
+                document.getElementById('auth-otp-section')?.classList.remove('is-hidden');
+                document.getElementById('auth-otp-input')?.focus();
+            } catch (err) {
+                status.textContent = 'Could not send a sign-in code. Please try again.';
+                status.className = 'newsletter-status newsletter-status--error';
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+
+        document.getElementById('auth-otp-submit')?.addEventListener('click', function() {
+            verifyOtp('auth-otp-input', 'auth-otp-status', 'signin');
+        });
 
         var otpSubmit = document.getElementById('otp-submit');
         if (otpSubmit) {
-            otpSubmit.addEventListener('click', async function() {
-                var input = document.getElementById('otp-input');
-                var code = input ? input.value.trim() : '';
-                var email = state.pendingAuthEmail;
-                if (!code || !email) return;
-
-                try {
-                    var result = await window.api.verifyOtpCode(email, code);
-                    if (result && result.access_token) {
-                        localStorage.setItem('pp_auth_token', result.access_token);
-                        if (result.user) {
-                            localStorage.setItem('pp_user_data', JSON.stringify(result.user));
-                        }
-                        if (window.authFunctions) {
-                            window.authFunctions.updateAuthUI();
-                        }
-                        document.getElementById('otp-section')?.classList.add('is-hidden');
-                        document.getElementById('newsletter-form')?.classList.add('is-hidden');
-                    }
-                } catch (err) {
-                    var status = document.getElementById('otp-status');
-                    if (!status) return;
-                    status.textContent = 'Invalid code. Try again.';
-                    status.classList.remove('is-hidden');
-                    status.classList.add('newsletter-status--error');
-                }
+            otpSubmit.addEventListener('click', function() {
+                verifyOtp('otp-input', 'otp-status', 'newsletter');
             });
         }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') closeAuthDialog();
+        });
     }
 
     function attachSwipe(wrap, opp) {
@@ -1283,6 +1372,9 @@
         updateMinScoreInUrl(state.minScore);
         bindEvents();
         updateStatusVisibility();
+        if (window.authFunctions) {
+            window.authFunctions.updateAuthUI();
+        }
         if (isAuthenticated()) {
             syncLocalStatusToServer();
         }
