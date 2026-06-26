@@ -250,6 +250,43 @@
         return normalized || 'No description available.';
     }
 
+    function stripLeadingSectionHeading(text) {
+        var normalized = String(text || '').replace(/\r\n/g, '\n').trim();
+        var lines = normalized.split('\n').map(function(line) { return line.trim(); }).filter(Boolean);
+
+        if (lines.length > 1) {
+            var first = lines[0].replace(/[:：-]+$/, '');
+            var words = first.split(/\s+/);
+            var looksLikeHeading = first.length <= 48
+                && words.length <= 6
+                && /^[A-Z][A-Za-z&/ ]+$/.test(first);
+            if (looksLikeHeading) {
+                return lines.slice(1).join(' ').trim();
+            }
+        }
+
+        return normalized.replace(/\s+/g, ' ');
+    }
+
+    function splitDetailLines(value) {
+        if (!value) return [];
+        return String(value)
+            .split(/\n+|•+/)
+            .map(stripLeadingSectionHeading)
+            .map(function(item) { return item.replace(/^[-*]\s*/, '').trim(); })
+            .filter(function(item) { return item.length > 0 && item.length < 220; });
+    }
+
+    function getRoleSummaryBullets(opp) {
+        var summary = splitDetailLines(opp.ai_summary);
+        if (summary.length) return summary.slice(0, 4);
+
+        var requirements = splitDetailLines(opp.requirements);
+        if (requirements.length) return requirements.slice(0, 4);
+
+        return [];
+    }
+
     function isNewListing(opportunity) {
         const reference = opportunity.first_seen || opportunity.posted_date;
         if (!reference) return false;
@@ -299,11 +336,15 @@
     }
 
     function getBullets(opp) {
+        const roleSummary = getRoleSummaryBullets(opp);
+        if (roleSummary.length) return roleSummary;
+
         const cls = opp.sentence_classifications;
         if (cls && cls.length) {
             const highlights = cls
                 .filter(function(item) { return item.tier === 'highlight' && item.text; })
-                .map(function(item) { return item.text; })
+                .map(function(item) { return stripLeadingSectionHeading(item.text); })
+                .filter(Boolean)
                 .slice(0, 4);
             if (highlights.length) return highlights;
         }
@@ -314,21 +355,52 @@
         if (desc === 'No description available.') return [];
         return desc
             .split(/[.!?]+\s+/)
-            .map(function(sentence) { return sentence.trim(); })
+            .map(stripLeadingSectionHeading)
             .filter(function(sentence) { return sentence.length > 20 && sentence.length < 220; })
             .slice(0, 4);
     }
 
+    function normalizeMediaCategory(value) {
+        return String(value || '')
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z]+/g, '_')
+            .replace(/^_+|_+$/g, '');
+    }
+
+    function categoryFromStructuredFields(opp) {
+        var category = normalizeMediaCategory(opp.media_category);
+        if (category) return category;
+
+        var inferred = normalizeMediaCategory(opp.media_category_inferred);
+        if (inferred) return inferred;
+
+        return null;
+    }
+
     function matchesCategory(opp, cat) {
         if (cat === 'all') return true;
-        var text = ((opp.title || '') + ' ' + (opp.description || '')).toLowerCase();
+        var structuredCategory = categoryFromStructuredFields(opp);
         var map = {
-            news:    ['news', 'journalist', 'reporter', 'editorial', 'anchor', 'broadcast'],
-            podcast: ['podcast', 'audio', 'radio', 'sound'],
-            video:   ['video', 'producer', 'cinemat', 'dp', 'director of photography'],
-            social:  ['social', 'digital', 'content creator', 'tiktok', 'instagram'],
+            news: ['news', 'editorial'],
+            podcast: ['podcast'],
+            video: ['video', 'television', 'film', 'streaming'],
+            social: ['social'],
         };
-        return (map[cat] || []).some(function(kw) { return text.includes(kw); });
+        var categories = map[cat] || [];
+
+        if (structuredCategory) {
+            return categories.includes(structuredCategory);
+        }
+
+        var text = ((opp.title || '') + ' ' + (opp.department || '')).toLowerCase();
+        var fallback = {
+            news: ['news', 'journalist', 'reporter', 'news editor', 'assignment editor', 'anchor', 'broadcast'],
+            podcast: ['podcast', 'audio producer', 'radio producer'],
+            video: ['video', 'film', 'television', 'showrunner', 'cinematographer', 'director of photography'],
+            social: ['social', 'tiktok', 'instagram', 'short-form', 'audience editor'],
+        };
+        return (fallback[cat] || []).some(function(kw) { return text.includes(kw); });
     }
 
     function renderDescription(opportunity, container) {

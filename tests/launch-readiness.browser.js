@@ -7,7 +7,9 @@ async (page) => {
             company_name: 'Audio House',
             score: 94,
             url: 'https://example.com/jobs/1',
-            description: 'Produce narrative audio stories and manage show delivery.',
+            description: 'Audio House makes award-winning shows for curious listeners.',
+            ai_summary: 'BOOK daily guests\nCUT narrative audio segments\nREPORTS TO Executive Producer',
+            media_category: 'podcast',
             salary_raw: 'Salary not listed',
             city: 'Brooklyn',
             state: 'NY',
@@ -20,6 +22,7 @@ async (page) => {
             score: 88,
             url: 'https://example.com/jobs/2',
             description: 'Produce breaking news video segments for digital channels.',
+            media_category: 'news',
             salary_raw: 'Salary not listed',
             city: 'New York',
             state: 'NY',
@@ -32,8 +35,22 @@ async (page) => {
             score: 82,
             url: 'https://example.com/jobs/3',
             description: 'Create social video packages for Instagram and TikTok.',
+            media_category: 'social',
             salary_raw: 'Salary not listed',
             city: 'Remote',
+            first_seen: new Date().toISOString(),
+        },
+        {
+            id: 4,
+            title: 'Senior Director, End User Support',
+            company_name: 'Systems Desk',
+            score: 91,
+            url: 'https://example.com/jobs/4',
+            description: 'Lead digital support for newsroom social tools and internal news systems.',
+            media_category: 'other',
+            salary_raw: 'Salary not listed',
+            city: 'New York',
+            state: 'NY',
             first_seen: new Date().toISOString(),
         },
     ];
@@ -99,9 +116,20 @@ async (page) => {
 
     await page.click('[data-category="news"]');
     await page.waitForFunction(() => new URL(location.href).searchParams.get('category') === 'news');
+    await page.waitForFunction(() => document.querySelector('#company-list')?.textContent?.includes('News Video Producer'));
+    assert(!await page.locator('#company-list').textContent().then((text) => text.includes('Senior Director')), 'Unrelated IT role appeared under News');
+    await page.click('[data-category="social"]');
+    await page.waitForFunction(() => new URL(location.href).searchParams.get('category') === 'social');
+    await page.waitForFunction(() => document.querySelector('#company-list')?.textContent?.includes('Social Producer'));
+    assert(!await page.locator('#company-list').textContent().then((text) => text.includes('Senior Director')), 'Unrelated IT role appeared under Social');
     await page.click('[data-category="all"]');
     await page.waitForFunction(() => !new URL(location.href).searchParams.has('category'));
     assert(!await hasQueryParam('category'), 'All category did not clear category query');
+
+    await page.click('[data-opportunity-id="1"] .pp-card');
+    await page.waitForFunction(() => document.querySelector('[data-opportunity-id="1"]')?.textContent?.includes('BOOK daily guests'));
+    const firstCardText = await page.locator('[data-opportunity-id="1"]').textContent();
+    assert(!firstCardText.includes('award-winning shows'), 'Expanded card used generic company boilerplate instead of role summary');
 
     await page.fill('#newsletter-email', 'notanemail');
     await page.click('#newsletter-form button[type="submit"]');
