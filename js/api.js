@@ -347,8 +347,9 @@ class APIClient {
     /**
      * Auth: Request magic link
      */
-    async requestMagicLink(email, purpose) {
+    async requestMagicLink(email, purpose, digestOptIn = false) {
         const body = purpose ? { email, purpose } : { email };
+        if (digestOptIn) body.digest_opt_in = true;
         return await this.request('/auth/magic-link', {
             method: 'POST',
             body: JSON.stringify(body),
@@ -429,6 +430,16 @@ class APIClient {
         return await this.request('/users/me/config', {
             method: 'PUT',
             body: JSON.stringify(config),
+        });
+    }
+
+    /**
+     * Digest: Unsubscribe using an email-scoped token
+     */
+    async unsubscribeDigest(token) {
+        const query = new URLSearchParams({ token });
+        return await this.request(`/users/digest/unsubscribe?${query.toString()}`, {
+            method: 'POST',
         });
     }
 

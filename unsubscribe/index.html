@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="pp-api-base-url" content="https://producer-producer-api.fly.dev,https://api.producer-producer.com">
+    <title>Email Preferences — Producer-Producer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/list.css?v=20260625-2">
+</head>
+
+<body class="preferences-page">
+    <main class="preferences-card">
+        <a class="site-wordmark" href="/">Producer-Producer</a>
+        <p class="auth-dialog-kicker">Email preferences</p>
+        <h1 class="preferences-title">Stop the daily digest.</h1>
+        <p class="preferences-copy" id="preferences-copy">You can unsubscribe this email address from new-listing updates. Your account and saved jobs will stay intact.</p>
+        <button type="button" class="digest-preferences-toggle" id="unsubscribe-btn">Unsubscribe</button>
+        <p class="newsletter-status is-hidden" id="unsubscribe-status"></p>
+        <a class="preferences-home-link" href="/">Return to the job board</a>
+    </main>
+
+    <script src="../js/api.js?v=20260625-2"></script>
+    <script>
+        (function () {
+            var token = new URLSearchParams(window.location.search).get('token');
+            var button = document.getElementById('unsubscribe-btn');
+            var status = document.getElementById('unsubscribe-status');
+
+            if (!token) {
+                button.disabled = true;
+                status.textContent = 'This unsubscribe link is incomplete.';
+                status.className = 'newsletter-status newsletter-status--error';
+                return;
+            }
+
+            button.addEventListener('click', async function () {
+                button.disabled = true;
+                try {
+                    await window.api.unsubscribeDigest(token);
+                    document.getElementById('preferences-copy').textContent = 'You will no longer receive the daily digest.';
+                    button.classList.add('is-hidden');
+                    status.textContent = 'Unsubscribed successfully.';
+                    status.className = 'newsletter-status newsletter-status--success';
+                } catch {
+                    button.disabled = false;
+                    status.textContent = 'This link could not be processed. Please try again.';
+                    status.className = 'newsletter-status newsletter-status--error';
+                }
+            });
+        })();
+    </script>
+</body>
+
+</html>

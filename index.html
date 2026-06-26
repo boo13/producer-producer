@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/list.css?v=20260625">
+    <link rel="stylesheet" href="css/list.css?v=20260625-2">
 </head>
 
 <body>
@@ -84,6 +84,13 @@
                     <button type="button" class="newsletter-submit" id="otp-submit">Verify →</button>
                 </div>
                 <p class="newsletter-status is-hidden" id="otp-status"></p>
+            </div>
+
+            <div class="digest-preferences is-hidden" id="digest-preferences">
+                <p class="newsletter-label">Daily digest</p>
+                <p class="digest-preferences-copy" id="digest-preferences-copy">Loading your email preference…</p>
+                <button type="button" class="digest-preferences-toggle" id="digest-preferences-toggle" disabled>Update preference</button>
+                <p class="newsletter-status is-hidden" id="digest-preferences-status"></p>
             </div>
         </section>
 
@@ -187,9 +194,9 @@
         </section>
     </div>
 
-    <script src="js/api.js?v=20260625"></script>
+    <script src="js/api.js?v=20260625-2"></script>
     <script src="js/auth.js?v=20260408"></script>
-    <script src="js/list.js?v=20260625"></script>
+    <script src="js/list.js?v=20260625-2"></script>
     <script>
         (function () {
             document.addEventListener('keydown', function (e) {
@@ -208,6 +215,7 @@
         <div class="m-wordmark">producer<span class="m-wordmark-dot">·</span>producer</div>
         <div class="m-account-controls">
           <button type="button" class="m-sign-in-btn" id="m-sign-in-btn">Sign in</button>
+          <button type="button" class="m-digest-btn is-hidden" id="m-digest-btn" disabled>Digest</button>
           <button type="button" class="m-avatar paper-dark is-hidden" id="m-account-btn" aria-label="Sign out"></button>
         </div>
       </div>

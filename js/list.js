@@ -28,6 +28,7 @@
         listings: [],
         pendingAuthEmail: null,
         pendingAuthContext: null,
+        userConfig: null,
         savedIds: new Set(),
         passedIds: new Set(),
         appliedIds: new Set(),
@@ -62,10 +63,18 @@
         newsletterForm: $id('newsletter-form'),
         newsletterEmail: $id('newsletter-email'),
         newsletterStatus: $id('newsletter-status'),
+        digestPreferences: $id('digest-preferences'),
+        digestPreferencesCopy: $id('digest-preferences-copy'),
+        digestPreferencesToggle: $id('digest-preferences-toggle'),
+        digestPreferencesStatus: $id('digest-preferences-status'),
     };
 
     function isAuthenticated() {
         return Boolean(window.api && window.api.isAuthenticated && window.api.isAuthenticated());
+    }
+
+    function getMobileDigestBtn() {
+        return document.getElementById('m-digest-btn');
     }
 
     function loadLocalSets() {
@@ -957,7 +966,7 @@
             if (submitBtn) submitBtn.disabled = true;
 
             try {
-                await window.api.requestMagicLink(email);
+                await window.api.requestMagicLink(email, null, true);
                 state.pendingAuthEmail = email;
                 state.pendingAuthContext = 'newsletter';
                 els.newsletterStatus.textContent = 'Check your inbox — enter the 6-digit code below.';
@@ -972,6 +981,97 @@
                 if (submitBtn) submitBtn.disabled = false;
             }
         });
+
+        els.digestPreferencesToggle?.addEventListener('click', toggleDigestPreference);
+        getMobileDigestBtn()?.addEventListener('click', toggleDigestPreference);
+    }
+
+    function renderDigestPreference() {
+        if (!state.userConfig) return;
+
+        var enabled = Boolean(state.userConfig.digest_enabled);
+        var mobileDigestBtn = getMobileDigestBtn();
+        els.digestPreferences?.classList.remove('is-hidden');
+        mobileDigestBtn?.classList.remove('is-hidden');
+
+        if (els.digestPreferencesCopy) {
+            els.digestPreferencesCopy.textContent = enabled
+                ? 'You’re subscribed to new-listing emails.'
+                : 'You’re signed in, but not subscribed to email updates.';
+        }
+        if (els.digestPreferencesToggle) {
+            els.digestPreferencesToggle.textContent = enabled ? 'Unsubscribe' : 'Subscribe';
+            els.digestPreferencesToggle.disabled = false;
+        }
+        if (mobileDigestBtn) {
+            mobileDigestBtn.textContent = enabled ? 'Digest on' : 'Digest off';
+            mobileDigestBtn.disabled = false;
+        }
+    }
+
+    async function loadDigestPreference() {
+        var mobileDigestBtn = getMobileDigestBtn();
+        if (!isAuthenticated()) {
+            state.userConfig = null;
+            els.digestPreferences?.classList.add('is-hidden');
+            mobileDigestBtn?.classList.add('is-hidden');
+            return;
+        }
+
+        els.digestPreferences?.classList.remove('is-hidden');
+        mobileDigestBtn?.classList.remove('is-hidden');
+        if (els.digestPreferencesCopy) {
+            els.digestPreferencesCopy.textContent = 'Loading your email preference…';
+        }
+        if (els.digestPreferencesToggle) els.digestPreferencesToggle.disabled = true;
+        if (mobileDigestBtn) {
+            mobileDigestBtn.textContent = 'Digest…';
+            mobileDigestBtn.disabled = true;
+        }
+
+        try {
+            state.userConfig = await window.api.getUserConfig();
+            renderDigestPreference();
+        } catch {
+            if (els.digestPreferencesCopy) {
+                els.digestPreferencesCopy.textContent = 'Email preferences are temporarily unavailable.';
+            }
+            if (mobileDigestBtn) {
+                mobileDigestBtn.textContent = 'Digest';
+            }
+        }
+    }
+
+    async function toggleDigestPreference() {
+        if (!state.userConfig) {
+            await loadDigestPreference();
+            if (!state.userConfig) return;
+        }
+
+        var nextEnabled = !state.userConfig.digest_enabled;
+        var mobileDigestBtn = getMobileDigestBtn();
+        if (els.digestPreferencesToggle) els.digestPreferencesToggle.disabled = true;
+        if (mobileDigestBtn) mobileDigestBtn.disabled = true;
+
+        try {
+            state.userConfig = await window.api.updateUserConfig({
+                version: state.userConfig.version,
+                digest_enabled: nextEnabled,
+            });
+            renderDigestPreference();
+            if (els.digestPreferencesStatus) {
+                els.digestPreferencesStatus.textContent = nextEnabled
+                    ? 'Daily digest subscribed.'
+                    : 'Daily digest unsubscribed.';
+                els.digestPreferencesStatus.className = 'newsletter-status newsletter-status--success';
+            }
+        } catch {
+            if (els.digestPreferencesStatus) {
+                els.digestPreferencesStatus.textContent = 'Could not update your email preference.';
+                els.digestPreferencesStatus.className = 'newsletter-status newsletter-status--error';
+            }
+            await loadDigestPreference();
+        }
     }
 
     function handleAuthChanged(detail) {
@@ -1012,6 +1112,14 @@
         var newsletterForm = document.getElementById('newsletter-form');
         if (newsletterForm) {
             newsletterForm.classList.toggle('is-hidden', Boolean(isAuth));
+        }
+        if (isAuth) {
+            document.getElementById('otp-section')?.classList.add('is-hidden');
+            loadDigestPreference();
+        } else {
+            state.userConfig = null;
+            els.digestPreferences?.classList.add('is-hidden');
+            getMobileDigestBtn()?.classList.add('is-hidden');
         }
 
         updateStatusVisibility();
@@ -1311,6 +1419,18 @@
             apply.rel = 'noopener noreferrer';
             apply.textContent = 'View Original Posting ↗';
             body.appendChild(apply);
+        }
+
+        if (isAuthenticated()) {
+            const applied = document.createElement('button');
+            applied.className = 'm-overlay-applied';
+            applied.type = 'button';
+            applied.textContent = state.appliedIds.has(opp.id) ? 'Applied ✓' : 'Mark as applied';
+            applied.addEventListener('click', function() {
+                recordStatus(opp, 'applied', applied);
+                applied.textContent = 'Applied ✓';
+            });
+            body.appendChild(applied);
         }
 
         content.appendChild(body);
