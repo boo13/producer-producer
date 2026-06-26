@@ -214,6 +214,9 @@ async (page) => {
     await page.goto('http://localhost:8080/');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
+    await expectText('.summary-stats', 'Listings Parsed');
+    await expectText('.summary-stats', 'Parsed today');
+    await expectText('.summary-stats', 'Parsed (7d)');
     await signIn('desktop@example.com');
     await expectText('#digest-preferences-copy', 'not subscribed');
 
