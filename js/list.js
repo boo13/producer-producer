@@ -37,6 +37,8 @@
 
     var localStatusSynced = false;
     var localSetsLoaded = false;
+    var scoreLoadTimer = null;
+    var listingLoadGeneration = 0;
 
     const $id = (id) => document.getElementById(id);
 
@@ -123,16 +125,65 @@
         return Math.max(0, Math.min(100, Math.round(num)));
     }
 
+    function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+    }
+
+    function setInlineStatus(el, message, type) {
+        if (!el) return;
+        el.textContent = message;
+        el.className = 'newsletter-status newsletter-status--' + type;
+    }
+
     function getInitialMinScore() {
         const params = new URLSearchParams(window.location.search);
         const fromQuery = params.get('min_score');
         return fromQuery == null ? DEFAULT_MIN_SCORE : clampScore(fromQuery);
     }
 
-    function updateMinScoreInUrl(minScore) {
+    function getInitialCategory() {
+        const params = new URLSearchParams(window.location.search);
+        const category = String(params.get('category') || 'all').toLowerCase();
+        return CATEGORIES.includes(category) ? category : 'all';
+    }
+
+    function updateFiltersInUrl() {
         const url = new URL(window.location.href);
-        url.searchParams.set('min_score', String(minScore));
+        url.searchParams.set('min_score', String(state.minScore));
+        if (state.category === 'all') {
+            url.searchParams.delete('category');
+        } else {
+            url.searchParams.set('category', state.category);
+        }
         window.history.replaceState({}, '', url);
+    }
+
+    function setScoreControlValue(value) {
+        var score = clampScore(value);
+        if (els.minScoreInput) els.minScoreInput.value = String(score);
+        if (els.scoreValue) els.scoreValue.textContent = String(score);
+        return score;
+    }
+
+    function commitMinScore(value, delay) {
+        state.minScore = setScoreControlValue(value);
+        updateFiltersInUrl();
+
+        if (scoreLoadTimer) clearTimeout(scoreLoadTimer);
+        scoreLoadTimer = setTimeout(function() {
+            loadListings();
+        }, delay || 0);
+    }
+
+    function valueFromRangePointer(input, clientX) {
+        var rect = input.getBoundingClientRect();
+        if (!rect.width) return clampScore(input.value);
+        var ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        var min = Number(input.min || 0);
+        var max = Number(input.max || 100);
+        var step = Number(input.step || 1);
+        var raw = min + ratio * (max - min);
+        return Math.round(raw / step) * step;
     }
 
     function fmtInteger(value) {
@@ -344,7 +395,6 @@
     }
 
     function setLoading(isLoading) {
-        if (els.minScoreInput) els.minScoreInput.disabled = isLoading;
         if (els.refreshBtn) els.refreshBtn.disabled = isLoading;
         if (!els.skeletonList) return;
 
@@ -726,6 +776,35 @@
         });
     }
 
+    function getEmptyStateCopy() {
+        var status = state.statusFilter;
+        var authed = isAuthenticated();
+
+        if (status === 'saved') {
+            return authed
+                ? { title: 'No saved jobs yet.', body: 'Saved listings will collect here.' }
+                : { title: 'Saved jobs require sign in.', body: 'Your saved listings will appear here after account access.' };
+        }
+
+        if (status === 'applied') {
+            return authed
+                ? { title: 'No applied jobs yet.', body: 'Jobs marked Applied will collect here.' }
+                : { title: 'Applied jobs require sign in.', body: 'Your applied listings will appear here after account access.' };
+        }
+
+        if (state.category !== 'all') {
+            return {
+                title: 'No listings in this category right now.',
+                body: 'No current matches at this score.',
+            };
+        }
+
+        return {
+            title: 'No listings match these filters right now.',
+            body: 'Fresh listings are pulled at dawn.',
+        };
+    }
+
     function clearListingList() {
         if (!els.companyList) return;
         Array.from(els.companyList.children).forEach(function(child) {
@@ -733,18 +812,32 @@
         });
     }
 
+    function clearMobileFeed() {
+        var feed = document.getElementById('m-feed');
+        if (feed) feed.innerHTML = '';
+    }
+
     function renderListings() {
         var filtered = getFilteredListings();
 
         if (state.isMobile) {
+            clearListingList();
             var feed = document.getElementById('m-feed');
             if (!feed) return;
             feed.innerHTML = '';
 
             if (!filtered.length) {
+                var emptyCopy = getEmptyStateCopy();
                 var empty = document.createElement('div');
                 empty.className = 'm-empty';
-                empty.innerHTML = '<div class="m-empty-title">That&apos;s a wrap.</div><div class="m-empty-sub">Fresh listings are pulled at dawn.</div>';
+                var emptyTitle = document.createElement('div');
+                emptyTitle.className = 'm-empty-title';
+                emptyTitle.textContent = emptyCopy.title;
+                var emptySub = document.createElement('div');
+                emptySub.className = 'm-empty-sub';
+                emptySub.textContent = emptyCopy.body;
+                empty.appendChild(emptyTitle);
+                empty.appendChild(emptySub);
                 feed.appendChild(empty);
                 updateMobileCounts();
                 return;
@@ -758,13 +851,15 @@
         }
 
         if (!els.companyList) return;
+        clearMobileFeed();
         if (els.skeletonList) els.skeletonList.classList.add('is-hidden');
         clearListingList();
 
         if (!filtered.length) {
+            var copy = getEmptyStateCopy();
             var desktopEmpty = document.createElement('p');
             desktopEmpty.className = 'empty-state';
-            desktopEmpty.textContent = 'No listings match these filters right now.';
+            desktopEmpty.textContent = copy.title + ' ' + copy.body;
             els.companyList.appendChild(desktopEmpty);
             updateResultsCaption(0);
             return;
@@ -831,11 +926,14 @@
             return;
         }
 
+        var generation = ++listingLoadGeneration;
+        var requestedMinScore = state.minScore;
         setLoading(true);
         clearError();
 
         try {
-            const listings = await fetchAllListings(state.minScore);
+            const listings = await fetchAllListings(requestedMinScore);
+            if (generation !== listingLoadGeneration) return;
             state.listings = sortListings(listings);
             renderListings();
             renderFeaturedCompanies();
@@ -844,20 +942,24 @@
                 els.lastUpdated.textContent = `Updated ${fmtDateTime(new Date())}`;
             }
         } catch (error) {
+            if (generation !== listingLoadGeneration) return;
             console.error('Failed to load listings:', error);
             state.listings = [];
             renderListings();
             updateSummary();
             showError('Could not load listings from the API. Please try refresh.');
         } finally {
-            setLoading(false);
-            await checkHealth();
+            if (generation === listingLoadGeneration) {
+                setLoading(false);
+                await checkHealth();
+            }
         }
     }
 
     function setCategory(category) {
         if (!CATEGORIES.includes(category) || category === state.category) return;
         state.category = category;
+        updateFiltersInUrl();
         syncFilterControls();
         renderListings();
     }
@@ -924,21 +1026,31 @@
 
     function updateMobileCounts() {
         var sEl = document.getElementById('m-saved-ct');
-        var pEl = document.getElementById('m-passed-ct');
+        var aEl = document.getElementById('m-applied-ct');
         if (sEl) sEl.textContent = state.savedIds.size + ' saved';
-        if (pEl) pEl.textContent = state.passedIds.size + ' passed';
+        if (aEl) aEl.textContent = state.appliedIds.size + ' applied';
     }
 
     function bindEvents() {
         els.minScoreInput?.addEventListener('input', (e) => {
-            const val = e.target.value;
-            if (els.scoreValue) els.scoreValue.textContent = val;
+            var score = setScoreControlValue(e.target.value);
+            if (scoreLoadTimer) clearTimeout(scoreLoadTimer);
+            scoreLoadTimer = setTimeout(function() {
+                state.minScore = score;
+                updateFiltersInUrl();
+                loadListings();
+            }, 220);
         });
 
         els.minScoreInput?.addEventListener('change', (e) => {
-            state.minScore = clampScore(e.target.value);
-            updateMinScoreInUrl(state.minScore);
-            loadListings();
+            commitMinScore(e.target.value, 0);
+        });
+
+        els.minScoreInput?.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0) return;
+            var input = e.currentTarget;
+            input.focus({ preventScroll: true });
+            commitMinScore(valueFromRangePointer(input, e.clientX), 180);
         });
 
         els.categoryChips?.addEventListener('click', (e) => {
@@ -960,7 +1072,12 @@
         els.newsletterForm?.addEventListener('submit', async (event) => {
             event.preventDefault();
             const email = els.newsletterEmail?.value?.trim();
-            if (!email || !els.newsletterStatus) return;
+            if (!els.newsletterStatus) return;
+            if (!email || !isValidEmail(email)) {
+                setInlineStatus(els.newsletterStatus, 'Please enter a valid email address.', 'error');
+                els.newsletterEmail?.focus();
+                return;
+            }
 
             const submitBtn = els.newsletterForm.querySelector('button[type="submit"]');
             if (submitBtn) submitBtn.disabled = true;
@@ -974,9 +1091,11 @@
                 if (els.newsletterEmail) els.newsletterEmail.value = '';
                 var otpSection = document.getElementById('otp-section');
                 if (otpSection) otpSection.classList.remove('is-hidden');
-            } catch {
-                els.newsletterStatus.textContent = 'Something went wrong. Please try again.';
-                els.newsletterStatus.className = 'newsletter-status newsletter-status--error';
+            } catch (err) {
+                var message = err && /email/i.test(String(err.message || ''))
+                    ? 'Please enter a valid email address.'
+                    : 'Could not send a subscription code. Please try again.';
+                setInlineStatus(els.newsletterStatus, message, 'error');
             } finally {
                 if (submitBtn) submitBtn.disabled = false;
             }
@@ -1209,7 +1328,12 @@
             var emailInput = document.getElementById('auth-email');
             var status = document.getElementById('auth-status');
             var email = emailInput ? emailInput.value.trim() : '';
-            if (!email || !status) return;
+            if (!status) return;
+            if (!email || !isValidEmail(email)) {
+                setInlineStatus(status, 'Please enter a valid email address.', 'error');
+                emailInput?.focus();
+                return;
+            }
 
             var submitBtn = event.currentTarget.querySelector('button[type="submit"]');
             if (submitBtn) submitBtn.disabled = true;
@@ -1223,8 +1347,10 @@
                 document.getElementById('auth-otp-section')?.classList.remove('is-hidden');
                 document.getElementById('auth-otp-input')?.focus();
             } catch (err) {
-                status.textContent = 'Could not send a sign-in code. Please try again.';
-                status.className = 'newsletter-status newsletter-status--error';
+                var message = err && /email/i.test(String(err.message || ''))
+                    ? 'Please enter a valid email address.'
+                    : 'Could not send a sign-in code. Please try again.';
+                setInlineStatus(status, message, 'error');
             } finally {
                 if (submitBtn) submitBtn.disabled = false;
             }
@@ -1485,11 +1611,9 @@
         bindDomReadyEvents();
 
         state.minScore = getInitialMinScore();
-        if (els.minScoreInput) {
-            els.minScoreInput.value = String(state.minScore);
-            if (els.scoreValue) els.scoreValue.textContent = String(state.minScore);
-        }
-        updateMinScoreInUrl(state.minScore);
+        state.category = getInitialCategory();
+        setScoreControlValue(state.minScore);
+        updateFiltersInUrl();
         bindEvents();
         updateStatusVisibility();
         if (window.authFunctions) {

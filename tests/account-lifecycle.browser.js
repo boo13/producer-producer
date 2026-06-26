@@ -294,7 +294,7 @@ async (page) => {
 
     await page.reload();
     await expectText('#m-saved-ct', '1 saved');
-    await expectText('#m-passed-ct', '1 passed');
+    await expectText('#m-applied-ct', '1 applied');
     await page.click('[data-mobile-status="true"][data-status="saved"]');
     await expectText('#m-feed', 'Senior Producer');
     await page.click('[data-mobile-status="true"][data-status="applied"]');
