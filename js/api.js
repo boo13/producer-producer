@@ -347,8 +347,9 @@ class APIClient {
     /**
      * Auth: Request magic link
      */
-    async requestMagicLink(email, purpose) {
+    async requestMagicLink(email, purpose, digestOptIn = false) {
         const body = purpose ? { email, purpose } : { email };
+        if (digestOptIn) body.digest_opt_in = true;
         return await this.request('/auth/magic-link', {
             method: 'POST',
             body: JSON.stringify(body),
@@ -433,6 +434,16 @@ class APIClient {
     }
 
     /**
+     * Digest: Unsubscribe using an email-scoped token
+     */
+    async unsubscribeDigest(token) {
+        const query = new URLSearchParams({ token });
+        return await this.request(`/users/digest/unsubscribe?${query.toString()}`, {
+            method: 'POST',
+        });
+    }
+
+    /**
      * Opportunities: Get public ranked feed (no auth required)
      */
     async getOpportunityFeed(params = {}) {
@@ -459,7 +470,11 @@ class APIClient {
     async getOpportunitiesForMe(params = {}) {
         const queryParams = new URLSearchParams();
 
-        if (params.status) queryParams.append('status', params.status);
+        if (params.status_filter) {
+            queryParams.append('status_filter', params.status_filter);
+        } else if (params.status) {
+            queryParams.append('status_filter', params.status);
+        }
         if (params.min_score !== undefined) queryParams.append('min_score', params.min_score);
         if (params.limit) queryParams.append('limit', params.limit);
         if (params.offset) queryParams.append('offset', params.offset);

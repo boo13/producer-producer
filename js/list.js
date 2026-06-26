@@ -27,6 +27,8 @@
         statusFilter: 'all',
         listings: [],
         pendingAuthEmail: null,
+        pendingAuthContext: null,
+        userConfig: null,
         savedIds: new Set(),
         passedIds: new Set(),
         appliedIds: new Set(),
@@ -35,6 +37,8 @@
 
     var localStatusSynced = false;
     var localSetsLoaded = false;
+    var scoreLoadTimer = null;
+    var listingLoadGeneration = 0;
 
     const $id = (id) => document.getElementById(id);
 
@@ -61,10 +65,18 @@
         newsletterForm: $id('newsletter-form'),
         newsletterEmail: $id('newsletter-email'),
         newsletterStatus: $id('newsletter-status'),
+        digestPreferences: $id('digest-preferences'),
+        digestPreferencesCopy: $id('digest-preferences-copy'),
+        digestPreferencesToggle: $id('digest-preferences-toggle'),
+        digestPreferencesStatus: $id('digest-preferences-status'),
     };
 
     function isAuthenticated() {
         return Boolean(window.api && window.api.isAuthenticated && window.api.isAuthenticated());
+    }
+
+    function getMobileDigestBtn() {
+        return document.getElementById('m-digest-btn');
     }
 
     function loadLocalSets() {
@@ -113,16 +125,65 @@
         return Math.max(0, Math.min(100, Math.round(num)));
     }
 
+    function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+    }
+
+    function setInlineStatus(el, message, type) {
+        if (!el) return;
+        el.textContent = message;
+        el.className = 'newsletter-status newsletter-status--' + type;
+    }
+
     function getInitialMinScore() {
         const params = new URLSearchParams(window.location.search);
         const fromQuery = params.get('min_score');
         return fromQuery == null ? DEFAULT_MIN_SCORE : clampScore(fromQuery);
     }
 
-    function updateMinScoreInUrl(minScore) {
+    function getInitialCategory() {
+        const params = new URLSearchParams(window.location.search);
+        const category = String(params.get('category') || 'all').toLowerCase();
+        return CATEGORIES.includes(category) ? category : 'all';
+    }
+
+    function updateFiltersInUrl() {
         const url = new URL(window.location.href);
-        url.searchParams.set('min_score', String(minScore));
+        url.searchParams.set('min_score', String(state.minScore));
+        if (state.category === 'all') {
+            url.searchParams.delete('category');
+        } else {
+            url.searchParams.set('category', state.category);
+        }
         window.history.replaceState({}, '', url);
+    }
+
+    function setScoreControlValue(value) {
+        var score = clampScore(value);
+        if (els.minScoreInput) els.minScoreInput.value = String(score);
+        if (els.scoreValue) els.scoreValue.textContent = String(score);
+        return score;
+    }
+
+    function commitMinScore(value, delay) {
+        state.minScore = setScoreControlValue(value);
+        updateFiltersInUrl();
+
+        if (scoreLoadTimer) clearTimeout(scoreLoadTimer);
+        scoreLoadTimer = setTimeout(function() {
+            loadListings();
+        }, delay || 0);
+    }
+
+    function valueFromRangePointer(input, clientX) {
+        var rect = input.getBoundingClientRect();
+        if (!rect.width) return clampScore(input.value);
+        var ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        var min = Number(input.min || 0);
+        var max = Number(input.max || 100);
+        var step = Number(input.step || 1);
+        var raw = min + ratio * (max - min);
+        return Math.round(raw / step) * step;
     }
 
     function fmtInteger(value) {
@@ -189,6 +250,43 @@
         return normalized || 'No description available.';
     }
 
+    function stripLeadingSectionHeading(text) {
+        var normalized = String(text || '').replace(/\r\n/g, '\n').trim();
+        var lines = normalized.split('\n').map(function(line) { return line.trim(); }).filter(Boolean);
+
+        if (lines.length > 1) {
+            var first = lines[0].replace(/[:：-]+$/, '');
+            var words = first.split(/\s+/);
+            var looksLikeHeading = first.length <= 48
+                && words.length <= 6
+                && /^[A-Z][A-Za-z&/ ]+$/.test(first);
+            if (looksLikeHeading) {
+                return lines.slice(1).join(' ').trim();
+            }
+        }
+
+        return normalized.replace(/\s+/g, ' ');
+    }
+
+    function splitDetailLines(value) {
+        if (!value) return [];
+        return String(value)
+            .split(/\n+|•+/)
+            .map(stripLeadingSectionHeading)
+            .map(function(item) { return item.replace(/^[-*]\s*/, '').trim(); })
+            .filter(function(item) { return item.length > 0 && item.length < 220; });
+    }
+
+    function getRoleSummaryBullets(opp) {
+        var summary = splitDetailLines(opp.ai_summary);
+        if (summary.length) return summary.slice(0, 4);
+
+        var requirements = splitDetailLines(opp.requirements);
+        if (requirements.length) return requirements.slice(0, 4);
+
+        return [];
+    }
+
     function isNewListing(opportunity) {
         const reference = opportunity.first_seen || opportunity.posted_date;
         if (!reference) return false;
@@ -238,11 +336,15 @@
     }
 
     function getBullets(opp) {
+        const roleSummary = getRoleSummaryBullets(opp);
+        if (roleSummary.length) return roleSummary;
+
         const cls = opp.sentence_classifications;
         if (cls && cls.length) {
             const highlights = cls
                 .filter(function(item) { return item.tier === 'highlight' && item.text; })
-                .map(function(item) { return item.text; })
+                .map(function(item) { return stripLeadingSectionHeading(item.text); })
+                .filter(Boolean)
                 .slice(0, 4);
             if (highlights.length) return highlights;
         }
@@ -253,21 +355,52 @@
         if (desc === 'No description available.') return [];
         return desc
             .split(/[.!?]+\s+/)
-            .map(function(sentence) { return sentence.trim(); })
+            .map(stripLeadingSectionHeading)
             .filter(function(sentence) { return sentence.length > 20 && sentence.length < 220; })
             .slice(0, 4);
     }
 
+    function normalizeMediaCategory(value) {
+        return String(value || '')
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z]+/g, '_')
+            .replace(/^_+|_+$/g, '');
+    }
+
+    function categoryFromStructuredFields(opp) {
+        var category = normalizeMediaCategory(opp.media_category);
+        if (category) return category;
+
+        var inferred = normalizeMediaCategory(opp.media_category_inferred);
+        if (inferred) return inferred;
+
+        return null;
+    }
+
     function matchesCategory(opp, cat) {
         if (cat === 'all') return true;
-        var text = ((opp.title || '') + ' ' + (opp.description || '')).toLowerCase();
+        var structuredCategory = categoryFromStructuredFields(opp);
         var map = {
-            news:    ['news', 'journalist', 'reporter', 'editorial', 'anchor', 'broadcast'],
-            podcast: ['podcast', 'audio', 'radio', 'sound'],
-            video:   ['video', 'producer', 'cinemat', 'dp', 'director of photography'],
-            social:  ['social', 'digital', 'content creator', 'tiktok', 'instagram'],
+            news: ['news', 'editorial'],
+            podcast: ['podcast'],
+            video: ['video', 'television', 'film', 'streaming'],
+            social: ['social'],
         };
-        return (map[cat] || []).some(function(kw) { return text.includes(kw); });
+        var categories = map[cat] || [];
+
+        if (structuredCategory) {
+            return categories.includes(structuredCategory);
+        }
+
+        var text = ((opp.title || '') + ' ' + (opp.department || '')).toLowerCase();
+        var fallback = {
+            news: ['news', 'journalist', 'reporter', 'news editor', 'assignment editor', 'anchor', 'broadcast'],
+            podcast: ['podcast', 'audio producer', 'radio producer'],
+            video: ['video', 'film', 'television', 'showrunner', 'cinematographer', 'director of photography'],
+            social: ['social', 'tiktok', 'instagram', 'short-form', 'audience editor'],
+        };
+        return (fallback[cat] || []).some(function(kw) { return text.includes(kw); });
     }
 
     function renderDescription(opportunity, container) {
@@ -334,7 +467,6 @@
     }
 
     function setLoading(isLoading) {
-        if (els.minScoreInput) els.minScoreInput.disabled = isLoading;
         if (els.refreshBtn) els.refreshBtn.disabled = isLoading;
         if (!els.skeletonList) return;
 
@@ -367,16 +499,35 @@
         });
     }
 
+    function normalizeUserOpportunity(item) {
+        if (!item || !item.opportunity) return null;
+
+        return {
+            ...item.opportunity,
+            score: item.score ?? item.opportunity.score,
+            user_status: item.status,
+            user_opportunity_id: item.id,
+        };
+    }
+
     async function fetchAllListings(minScore) {
         if (state.statusFilter !== 'all' && isAuthenticated()) {
             var statusMap = { saved: 'todo', applied: 'applied' };
             var params = {
-                min_score: minScore,
-                status: statusMap[state.statusFilter],
+                status_filter: statusMap[state.statusFilter],
                 limit: PAGE_SIZE,
             };
-            var results = await window.api.getOpportunitiesForMe(params);
-            return results || [];
+            var results = await window.api.getUserOpportunities(params);
+            var normalized = (results || []).map(normalizeUserOpportunity).filter(Boolean);
+
+            normalized.forEach(function(opp) {
+                if (opp.user_status === 'todo') state.savedIds.add(opp.id);
+                if (opp.user_status === 'applied') state.appliedIds.add(opp.id);
+            });
+            saveLocalSet('savedIds');
+            saveLocalSet('appliedIds');
+
+            return normalized;
         }
 
         const items = [];
@@ -547,7 +698,7 @@
         updateMobileCounts();
 
         if (isAuthenticated() && window.api.updateOpportunityStatus) {
-            window.api.updateOpportunityStatus(opp.id, status).catch(console.error);
+            window.api.updateOpportunityStatus(opp.id, status, { score: opp.score }).catch(console.error);
         }
     }
 
@@ -697,6 +848,35 @@
         });
     }
 
+    function getEmptyStateCopy() {
+        var status = state.statusFilter;
+        var authed = isAuthenticated();
+
+        if (status === 'saved') {
+            return authed
+                ? { title: 'No saved jobs yet.', body: 'Saved listings will collect here.' }
+                : { title: 'Saved jobs require sign in.', body: 'Your saved listings will appear here after account access.' };
+        }
+
+        if (status === 'applied') {
+            return authed
+                ? { title: 'No applied jobs yet.', body: 'Jobs marked Applied will collect here.' }
+                : { title: 'Applied jobs require sign in.', body: 'Your applied listings will appear here after account access.' };
+        }
+
+        if (state.category !== 'all') {
+            return {
+                title: 'No listings in this category right now.',
+                body: 'No current matches at this score.',
+            };
+        }
+
+        return {
+            title: 'No listings match these filters right now.',
+            body: 'Fresh listings are pulled at dawn.',
+        };
+    }
+
     function clearListingList() {
         if (!els.companyList) return;
         Array.from(els.companyList.children).forEach(function(child) {
@@ -704,18 +884,32 @@
         });
     }
 
+    function clearMobileFeed() {
+        var feed = document.getElementById('m-feed');
+        if (feed) feed.innerHTML = '';
+    }
+
     function renderListings() {
         var filtered = getFilteredListings();
 
         if (state.isMobile) {
+            clearListingList();
             var feed = document.getElementById('m-feed');
             if (!feed) return;
             feed.innerHTML = '';
 
             if (!filtered.length) {
+                var emptyCopy = getEmptyStateCopy();
                 var empty = document.createElement('div');
                 empty.className = 'm-empty';
-                empty.innerHTML = '<div class="m-empty-title">That&apos;s a wrap.</div><div class="m-empty-sub">Fresh listings are pulled at dawn.</div>';
+                var emptyTitle = document.createElement('div');
+                emptyTitle.className = 'm-empty-title';
+                emptyTitle.textContent = emptyCopy.title;
+                var emptySub = document.createElement('div');
+                emptySub.className = 'm-empty-sub';
+                emptySub.textContent = emptyCopy.body;
+                empty.appendChild(emptyTitle);
+                empty.appendChild(emptySub);
                 feed.appendChild(empty);
                 updateMobileCounts();
                 return;
@@ -729,13 +923,15 @@
         }
 
         if (!els.companyList) return;
+        clearMobileFeed();
         if (els.skeletonList) els.skeletonList.classList.add('is-hidden');
         clearListingList();
 
         if (!filtered.length) {
+            var copy = getEmptyStateCopy();
             var desktopEmpty = document.createElement('p');
             desktopEmpty.className = 'empty-state';
-            desktopEmpty.textContent = 'No listings match these filters right now.';
+            desktopEmpty.textContent = copy.title + ' ' + copy.body;
             els.companyList.appendChild(desktopEmpty);
             updateResultsCaption(0);
             return;
@@ -802,11 +998,14 @@
             return;
         }
 
+        var generation = ++listingLoadGeneration;
+        var requestedMinScore = state.minScore;
         setLoading(true);
         clearError();
 
         try {
-            const listings = await fetchAllListings(state.minScore);
+            const listings = await fetchAllListings(requestedMinScore);
+            if (generation !== listingLoadGeneration) return;
             state.listings = sortListings(listings);
             renderListings();
             renderFeaturedCompanies();
@@ -815,20 +1014,24 @@
                 els.lastUpdated.textContent = `Updated ${fmtDateTime(new Date())}`;
             }
         } catch (error) {
+            if (generation !== listingLoadGeneration) return;
             console.error('Failed to load listings:', error);
             state.listings = [];
             renderListings();
             updateSummary();
             showError('Could not load listings from the API. Please try refresh.');
         } finally {
-            setLoading(false);
-            await checkHealth();
+            if (generation === listingLoadGeneration) {
+                setLoading(false);
+                await checkHealth();
+            }
         }
     }
 
     function setCategory(category) {
         if (!CATEGORIES.includes(category) || category === state.category) return;
         state.category = category;
+        updateFiltersInUrl();
         syncFilterControls();
         renderListings();
     }
@@ -895,21 +1098,31 @@
 
     function updateMobileCounts() {
         var sEl = document.getElementById('m-saved-ct');
-        var pEl = document.getElementById('m-passed-ct');
+        var aEl = document.getElementById('m-applied-ct');
         if (sEl) sEl.textContent = state.savedIds.size + ' saved';
-        if (pEl) pEl.textContent = state.passedIds.size + ' passed';
+        if (aEl) aEl.textContent = state.appliedIds.size + ' applied';
     }
 
     function bindEvents() {
         els.minScoreInput?.addEventListener('input', (e) => {
-            const val = e.target.value;
-            if (els.scoreValue) els.scoreValue.textContent = val;
+            var score = setScoreControlValue(e.target.value);
+            if (scoreLoadTimer) clearTimeout(scoreLoadTimer);
+            scoreLoadTimer = setTimeout(function() {
+                state.minScore = score;
+                updateFiltersInUrl();
+                loadListings();
+            }, 220);
         });
 
         els.minScoreInput?.addEventListener('change', (e) => {
-            state.minScore = clampScore(e.target.value);
-            updateMinScoreInUrl(state.minScore);
-            loadListings();
+            commitMinScore(e.target.value, 0);
+        });
+
+        els.minScoreInput?.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0) return;
+            var input = e.currentTarget;
+            input.focus({ preventScroll: true });
+            commitMinScore(valueFromRangePointer(input, e.clientX), 180);
         });
 
         els.categoryChips?.addEventListener('click', (e) => {
@@ -931,26 +1144,125 @@
         els.newsletterForm?.addEventListener('submit', async (event) => {
             event.preventDefault();
             const email = els.newsletterEmail?.value?.trim();
-            if (!email || !els.newsletterStatus) return;
+            if (!els.newsletterStatus) return;
+            if (!email || !isValidEmail(email)) {
+                setInlineStatus(els.newsletterStatus, 'Please enter a valid email address.', 'error');
+                els.newsletterEmail?.focus();
+                return;
+            }
 
             const submitBtn = els.newsletterForm.querySelector('button[type="submit"]');
             if (submitBtn) submitBtn.disabled = true;
 
             try {
-                await window.api.requestMagicLink(email);
+                await window.api.requestMagicLink(email, null, true);
                 state.pendingAuthEmail = email;
+                state.pendingAuthContext = 'newsletter';
                 els.newsletterStatus.textContent = 'Check your inbox — enter the 6-digit code below.';
                 els.newsletterStatus.className = 'newsletter-status newsletter-status--success';
                 if (els.newsletterEmail) els.newsletterEmail.value = '';
                 var otpSection = document.getElementById('otp-section');
                 if (otpSection) otpSection.classList.remove('is-hidden');
-            } catch {
-                els.newsletterStatus.textContent = 'Something went wrong. Please try again.';
-                els.newsletterStatus.className = 'newsletter-status newsletter-status--error';
+            } catch (err) {
+                var message = err && /email/i.test(String(err.message || ''))
+                    ? 'Please enter a valid email address.'
+                    : 'Could not send a subscription code. Please try again.';
+                setInlineStatus(els.newsletterStatus, message, 'error');
             } finally {
                 if (submitBtn) submitBtn.disabled = false;
             }
         });
+
+        els.digestPreferencesToggle?.addEventListener('click', toggleDigestPreference);
+        getMobileDigestBtn()?.addEventListener('click', toggleDigestPreference);
+    }
+
+    function renderDigestPreference() {
+        if (!state.userConfig) return;
+
+        var enabled = Boolean(state.userConfig.digest_enabled);
+        var mobileDigestBtn = getMobileDigestBtn();
+        els.digestPreferences?.classList.remove('is-hidden');
+        mobileDigestBtn?.classList.remove('is-hidden');
+
+        if (els.digestPreferencesCopy) {
+            els.digestPreferencesCopy.textContent = enabled
+                ? 'You’re subscribed to new-listing emails.'
+                : 'You’re signed in, but not subscribed to email updates.';
+        }
+        if (els.digestPreferencesToggle) {
+            els.digestPreferencesToggle.textContent = enabled ? 'Unsubscribe' : 'Subscribe';
+            els.digestPreferencesToggle.disabled = false;
+        }
+        if (mobileDigestBtn) {
+            mobileDigestBtn.textContent = enabled ? 'Digest on' : 'Digest off';
+            mobileDigestBtn.disabled = false;
+        }
+    }
+
+    async function loadDigestPreference() {
+        var mobileDigestBtn = getMobileDigestBtn();
+        if (!isAuthenticated()) {
+            state.userConfig = null;
+            els.digestPreferences?.classList.add('is-hidden');
+            mobileDigestBtn?.classList.add('is-hidden');
+            return;
+        }
+
+        els.digestPreferences?.classList.remove('is-hidden');
+        mobileDigestBtn?.classList.remove('is-hidden');
+        if (els.digestPreferencesCopy) {
+            els.digestPreferencesCopy.textContent = 'Loading your email preference…';
+        }
+        if (els.digestPreferencesToggle) els.digestPreferencesToggle.disabled = true;
+        if (mobileDigestBtn) {
+            mobileDigestBtn.textContent = 'Digest…';
+            mobileDigestBtn.disabled = true;
+        }
+
+        try {
+            state.userConfig = await window.api.getUserConfig();
+            renderDigestPreference();
+        } catch {
+            if (els.digestPreferencesCopy) {
+                els.digestPreferencesCopy.textContent = 'Email preferences are temporarily unavailable.';
+            }
+            if (mobileDigestBtn) {
+                mobileDigestBtn.textContent = 'Digest';
+            }
+        }
+    }
+
+    async function toggleDigestPreference() {
+        if (!state.userConfig) {
+            await loadDigestPreference();
+            if (!state.userConfig) return;
+        }
+
+        var nextEnabled = !state.userConfig.digest_enabled;
+        var mobileDigestBtn = getMobileDigestBtn();
+        if (els.digestPreferencesToggle) els.digestPreferencesToggle.disabled = true;
+        if (mobileDigestBtn) mobileDigestBtn.disabled = true;
+
+        try {
+            state.userConfig = await window.api.updateUserConfig({
+                version: state.userConfig.version,
+                digest_enabled: nextEnabled,
+            });
+            renderDigestPreference();
+            if (els.digestPreferencesStatus) {
+                els.digestPreferencesStatus.textContent = nextEnabled
+                    ? 'Daily digest subscribed.'
+                    : 'Daily digest unsubscribed.';
+                els.digestPreferencesStatus.className = 'newsletter-status newsletter-status--success';
+            }
+        } catch {
+            if (els.digestPreferencesStatus) {
+                els.digestPreferencesStatus.textContent = 'Could not update your email preference.';
+                els.digestPreferencesStatus.className = 'newsletter-status newsletter-status--error';
+            }
+            await loadDigestPreference();
+        }
     }
 
     function handleAuthChanged(detail) {
@@ -960,21 +1272,45 @@
         var greeting = document.getElementById('user-greeting');
         var signInBtn = document.getElementById('sign-in-btn');
         var signOutBtn = document.getElementById('sign-out-btn');
+        var mobileSignInBtn = document.getElementById('m-sign-in-btn');
+        var mobileAccountBtn = document.getElementById('m-account-btn');
 
         if (isAuth && user) {
             if (greeting) greeting.textContent = user.email || '';
             greeting?.classList.remove('is-hidden');
             signOutBtn?.classList.remove('is-hidden');
             signInBtn?.classList.add('is-hidden');
+            mobileSignInBtn?.classList.add('is-hidden');
+            if (mobileAccountBtn) {
+                var emailName = String(user.email || '').split('@')[0];
+                var initials = emailName
+                    .split(/[._-]+/)
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map(function(part) { return part.charAt(0).toUpperCase(); })
+                    .join('');
+                mobileAccountBtn.textContent = initials || 'ME';
+                mobileAccountBtn.classList.remove('is-hidden');
+            }
         } else {
             greeting?.classList.add('is-hidden');
             signOutBtn?.classList.add('is-hidden');
             signInBtn?.classList.remove('is-hidden');
+            mobileSignInBtn?.classList.remove('is-hidden');
+            mobileAccountBtn?.classList.add('is-hidden');
         }
 
         var newsletterForm = document.getElementById('newsletter-form');
         if (newsletterForm) {
             newsletterForm.classList.toggle('is-hidden', Boolean(isAuth));
+        }
+        if (isAuth) {
+            document.getElementById('otp-section')?.classList.add('is-hidden');
+            loadDigestPreference();
+        } else {
+            state.userConfig = null;
+            els.digestPreferences?.classList.add('is-hidden');
+            getMobileDigestBtn()?.classList.add('is-hidden');
         }
 
         updateStatusVisibility();
@@ -985,6 +1321,48 @@
         }
 
         renderListings();
+    }
+
+    function openAuthDialog() {
+        var dialog = document.getElementById('auth-dialog');
+        if (!dialog) return;
+        dialog.classList.remove('is-hidden');
+        document.getElementById('auth-email')?.focus();
+    }
+
+    function closeAuthDialog() {
+        var dialog = document.getElementById('auth-dialog');
+        if (!dialog) return;
+        dialog.classList.add('is-hidden');
+    }
+
+    async function verifyOtp(inputId, statusId, context) {
+        var input = document.getElementById(inputId);
+        var status = document.getElementById(statusId);
+        var code = input ? input.value.trim() : '';
+        var email = state.pendingAuthEmail;
+
+        if (!code || !email || state.pendingAuthContext !== context) return;
+
+        try {
+            var result = await window.api.verifyOtpCode(email, code);
+            if (!result || !result.access_token) return;
+
+            if (window.authFunctions) {
+                window.authFunctions.updateAuthUI();
+            }
+
+            if (context === 'signin') {
+                closeAuthDialog();
+            } else {
+                document.getElementById('otp-section')?.classList.add('is-hidden');
+                document.getElementById('newsletter-form')?.classList.add('is-hidden');
+            }
+        } catch (err) {
+            if (!status) return;
+            status.textContent = 'Invalid code. Try again.';
+            status.className = 'newsletter-status newsletter-status--error';
+        }
     }
 
     function bindDomReadyEvents() {
@@ -1007,46 +1385,63 @@
 
         var signInBtn = document.getElementById('sign-in-btn');
         if (signInBtn) {
-            signInBtn.addEventListener('click', function() {
-                var form = document.getElementById('newsletter-form');
-                if (form) {
-                    form.scrollIntoView({ behavior: 'smooth' });
-                    var emailInput = document.getElementById('newsletter-email');
-                    if (emailInput) emailInput.focus();
-                }
-            });
+            signInBtn.addEventListener('click', openAuthDialog);
         }
+
+        document.getElementById('m-sign-in-btn')?.addEventListener('click', openAuthDialog);
+        document.getElementById('auth-dialog-close')?.addEventListener('click', closeAuthDialog);
+        document.getElementById('auth-dialog-backdrop')?.addEventListener('click', closeAuthDialog);
+        document.getElementById('m-account-btn')?.addEventListener('click', function() {
+            window.authFunctions?.logout();
+        });
+
+        document.getElementById('auth-form')?.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            var emailInput = document.getElementById('auth-email');
+            var status = document.getElementById('auth-status');
+            var email = emailInput ? emailInput.value.trim() : '';
+            if (!status) return;
+            if (!email || !isValidEmail(email)) {
+                setInlineStatus(status, 'Please enter a valid email address.', 'error');
+                emailInput?.focus();
+                return;
+            }
+
+            var submitBtn = event.currentTarget.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+
+            try {
+                await window.api.requestMagicLink(email);
+                state.pendingAuthEmail = email;
+                state.pendingAuthContext = 'signin';
+                status.textContent = 'Check your inbox for the 6-digit sign-in code.';
+                status.className = 'newsletter-status newsletter-status--success';
+                document.getElementById('auth-otp-section')?.classList.remove('is-hidden');
+                document.getElementById('auth-otp-input')?.focus();
+            } catch (err) {
+                var message = err && /email/i.test(String(err.message || ''))
+                    ? 'Please enter a valid email address.'
+                    : 'Could not send a sign-in code. Please try again.';
+                setInlineStatus(status, message, 'error');
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+
+        document.getElementById('auth-otp-submit')?.addEventListener('click', function() {
+            verifyOtp('auth-otp-input', 'auth-otp-status', 'signin');
+        });
 
         var otpSubmit = document.getElementById('otp-submit');
         if (otpSubmit) {
-            otpSubmit.addEventListener('click', async function() {
-                var input = document.getElementById('otp-input');
-                var code = input ? input.value.trim() : '';
-                var email = state.pendingAuthEmail;
-                if (!code || !email) return;
-
-                try {
-                    var result = await window.api.verifyOtpCode(email, code);
-                    if (result && result.access_token) {
-                        localStorage.setItem('pp_auth_token', result.access_token);
-                        if (result.user) {
-                            localStorage.setItem('pp_user_data', JSON.stringify(result.user));
-                        }
-                        if (window.authFunctions) {
-                            window.authFunctions.updateAuthUI();
-                        }
-                        document.getElementById('otp-section')?.classList.add('is-hidden');
-                        document.getElementById('newsletter-form')?.classList.add('is-hidden');
-                    }
-                } catch (err) {
-                    var status = document.getElementById('otp-status');
-                    if (!status) return;
-                    status.textContent = 'Invalid code. Try again.';
-                    status.classList.remove('is-hidden');
-                    status.classList.add('newsletter-status--error');
-                }
+            otpSubmit.addEventListener('click', function() {
+                verifyOtp('otp-input', 'otp-status', 'newsletter');
             });
         }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') closeAuthDialog();
+        });
     }
 
     function attachSwipe(wrap, opp) {
@@ -1224,6 +1619,18 @@
             body.appendChild(apply);
         }
 
+        if (isAuthenticated()) {
+            const applied = document.createElement('button');
+            applied.className = 'm-overlay-applied';
+            applied.type = 'button';
+            applied.textContent = state.appliedIds.has(opp.id) ? 'Applied ✓' : 'Mark as applied';
+            applied.addEventListener('click', function() {
+                recordStatus(opp, 'applied', applied);
+                applied.textContent = 'Applied ✓';
+            });
+            body.appendChild(applied);
+        }
+
         content.appendChild(body);
 
         overlay.classList.add('is-visible');
@@ -1276,13 +1683,14 @@
         bindDomReadyEvents();
 
         state.minScore = getInitialMinScore();
-        if (els.minScoreInput) {
-            els.minScoreInput.value = String(state.minScore);
-            if (els.scoreValue) els.scoreValue.textContent = String(state.minScore);
-        }
-        updateMinScoreInUrl(state.minScore);
+        state.category = getInitialCategory();
+        setScoreControlValue(state.minScore);
+        updateFiltersInUrl();
         bindEvents();
         updateStatusVisibility();
+        if (window.authFunctions) {
+            window.authFunctions.updateAuthUI();
+        }
         if (isAuthenticated()) {
             syncLocalStatusToServer();
         }
