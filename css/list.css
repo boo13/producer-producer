@@ -1561,6 +1561,23 @@ input {
   display: none;
 }
 
+.m-error {
+  margin: 0;
+  padding: 0.55rem 20px;
+  border-top: 1px solid rgba(176, 53, 36, 0.36);
+  border-bottom: 1px solid rgba(176, 53, 36, 0.36);
+  background: rgba(176, 53, 36, 0.06);
+  color: var(--neg);
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+  flex-shrink: 0;
+}
+
+.m-error.is-hidden {
+  display: none;
+}
+
 .m-filter-pill {
   border: 1px solid var(--rule);
   background: transparent;

@@ -3,8 +3,8 @@
  * Handles authentication, token management, and API communication
  */
 
-// NOTE: `api.producer-producer.com` is currently behind a Cloudflare challenge,
-// which can block browser fetch() in some environments.
+// NOTE: `api.producer-producer.com` is DNS-only (grey-clouded) in Cloudflare so
+// browser fetch() is never bot-challenged; it must stay un-proxied.
 const DEFAULT_LOCAL_API_BASE_URLS = [
     'http://localhost:8080',
     'http://127.0.0.1:8080',
@@ -312,8 +312,11 @@ class APIClient {
             try {
                 const response = await fetch(url, config);
 
-                // Handle 401 Unauthorized
-                if (response.status === 401) {
+                // Handle 401 Unauthorized. Auth verification endpoints return
+                // 401 for a bad/expired code or link — surface that detail
+                // instead of nuking the current session.
+                const isAuthAttempt = endpoint.startsWith('/auth/verify') || endpoint.startsWith('/auth/magic-link');
+                if (response.status === 401 && !isAuthAttempt) {
                     this.logout();
                     throw new Error('Authentication required. Please log in again.');
                 }
