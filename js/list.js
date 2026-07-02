@@ -129,6 +129,15 @@
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
     }
 
+    function safeExternalUrl(url) {
+        if (!url) return null;
+        try {
+            var parsed = new URL(String(url), window.location.href);
+            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed.href;
+        } catch (e) {}
+        return null;
+    }
+
     function setInlineStatus(el, message, type) {
         if (!el) return;
         el.textContent = message;
@@ -238,9 +247,10 @@
     function normalizeDescription(rawDescription) {
         if (!rawDescription) return 'No description available.';
 
-        const tmp = document.createElement('div');
-        tmp.innerHTML = String(rawDescription);
-        const text = tmp.textContent || tmp.innerText || '';
+        // DOMParser documents are inert — unlike a detached div's innerHTML,
+        // <img onerror> in ATS-supplied HTML can never execute here.
+        const doc = new DOMParser().parseFromString(String(rawDescription), 'text/html');
+        const text = doc.body ? (doc.body.textContent || '') : '';
         const normalized = text
             .replace(/\r\n/g, '\n')
             .replace(/\n{3,}/g, '\n\n')
@@ -478,15 +488,32 @@
     }
 
     function showError(message) {
-        if (!els.errorBanner) return;
-        els.errorBanner.textContent = message;
-        els.errorBanner.classList.remove('is-hidden');
+        if (els.errorBanner) {
+            els.errorBanner.textContent = message;
+            els.errorBanner.classList.remove('is-hidden');
+        }
+        var mErr = document.getElementById('m-error');
+        if (mErr) {
+            var diagnostics = window.api && window.api.getNetworkDiagnostics
+                ? window.api.getNetworkDiagnostics()
+                : null;
+            mErr.textContent = diagnostics && diagnostics.activeBaseUrl
+                ? message + ' (API: ' + diagnostics.activeBaseUrl + ')'
+                : message;
+            mErr.classList.remove('is-hidden');
+        }
     }
 
     function clearError() {
-        if (!els.errorBanner) return;
-        els.errorBanner.textContent = '';
-        els.errorBanner.classList.add('is-hidden');
+        if (els.errorBanner) {
+            els.errorBanner.textContent = '';
+            els.errorBanner.classList.add('is-hidden');
+        }
+        var mErr = document.getElementById('m-error');
+        if (mErr) {
+            mErr.textContent = '';
+            mErr.classList.add('is-hidden');
+        }
     }
 
     function dedupeListings(listings) {
@@ -641,7 +668,7 @@
 
         var link = document.createElement('a');
         link.className = 'pp-action-link';
-        link.href = opp.url || '#';
+        link.href = safeExternalUrl(opp.url) || '#';
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         link.textContent = 'View original ↗';
@@ -1360,7 +1387,10 @@
             }
         } catch (err) {
             if (!status) return;
-            status.textContent = 'Invalid code. Try again.';
+            var message = err && err.message ? String(err.message) : '';
+            status.textContent = /network/i.test(message)
+                ? 'Could not reach the API. Check your connection and try again.'
+                : (message || 'Invalid code. Try again.');
             status.className = 'newsletter-status newsletter-status--error';
         }
     }
@@ -1609,10 +1639,11 @@
         textEl.textContent = desc;
         body.appendChild(textEl);
 
-        if (opp.url) {
+        const applyUrl = safeExternalUrl(opp.url);
+        if (applyUrl) {
             const apply = document.createElement('a');
             apply.className = 'm-overlay-apply';
-            apply.href = opp.url;
+            apply.href = applyUrl;
             apply.target = '_blank';
             apply.rel = 'noopener noreferrer';
             apply.textContent = 'View Original Posting ↗';
