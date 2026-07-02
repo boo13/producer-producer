@@ -39,6 +39,8 @@
     var localSetsLoaded = false;
     var scoreLoadTimer = null;
     var listingLoadGeneration = 0;
+    var undoTimer = null;
+    var pendingUndo = null;
 
     const $id = (id) => document.getElementById(id);
 
@@ -93,6 +95,84 @@
         try {
             localStorage.setItem('pp_' + key, JSON.stringify(Array.from(state[key])));
         } catch(e) {}
+    }
+
+    function saveStatusSets() {
+        saveLocalSet('savedIds');
+        saveLocalSet('appliedIds');
+        saveLocalSet('passedIds');
+    }
+
+    function statusSnapshot(id) {
+        return {
+            saved: state.savedIds.has(id),
+            applied: state.appliedIds.has(id),
+            passed: state.passedIds.has(id),
+        };
+    }
+
+    function restoreStatusSnapshot(id, snapshot) {
+        state.savedIds[snapshot.saved ? 'add' : 'delete'](id);
+        state.appliedIds[snapshot.applied ? 'add' : 'delete'](id);
+        state.passedIds[snapshot.passed ? 'add' : 'delete'](id);
+    }
+
+    function statusFromSnapshot(snapshot) {
+        if (snapshot.applied) return 'applied';
+        if (snapshot.saved) return 'todo';
+        if (snapshot.passed) return 'ignored';
+        return null;
+    }
+
+    function statusLabel(status) {
+        if (status === 'todo') return 'Saved';
+        if (status === 'applied') return 'Applied';
+        if (status === 'ignored') return 'Passed';
+        return 'Updated';
+    }
+
+    function hideUndoToast() {
+        var toast = document.getElementById('undo-toast');
+        if (toast) toast.classList.add('is-hidden');
+        pendingUndo = null;
+        if (undoTimer) {
+            clearTimeout(undoTimer);
+            undoTimer = null;
+        }
+    }
+
+    function showUndoToast(opp, status, prev, statusSync) {
+        var toast = document.getElementById('undo-toast');
+        var text = document.getElementById('undo-toast-text');
+        if (!toast || !text) return;
+
+        pendingUndo = { opp: opp, prev: prev, statusSync: statusSync || Promise.resolve() };
+        text.textContent = statusLabel(status) + ' — ' + (opp.title || 'Untitled role');
+        toast.classList.remove('is-hidden');
+
+        if (undoTimer) clearTimeout(undoTimer);
+        undoTimer = setTimeout(hideUndoToast, 5000);
+    }
+
+    function undoLastStatusChange() {
+        if (!pendingUndo) {
+            hideUndoToast();
+            return;
+        }
+
+        var undo = pendingUndo;
+        var priorStatus = statusFromSnapshot(undo.prev);
+        restoreStatusSnapshot(undo.opp.id, undo.prev);
+        saveStatusSets();
+        renderListings();
+        updateMobileCounts();
+        hideUndoToast();
+
+        if (priorStatus && isAuthenticated() && window.api.updateOpportunityStatus) {
+            undo.statusSync.finally(function() {
+                return window.api.updateOpportunityStatus(undo.opp.id, priorStatus, { score: undo.opp.score });
+            }).catch(console.error);
+        }
     }
 
     function syncLocalStatusToServer() {
@@ -698,35 +778,35 @@
     }
 
     function recordStatus(opp, status, btn) {
+        var prev = statusSnapshot(opp.id);
+
         if (status === 'todo') {
             state.savedIds.add(opp.id);
             state.passedIds.delete(opp.id);
-            saveLocalSet('savedIds');
-            saveLocalSet('passedIds');
+            state.appliedIds.delete(opp.id);
         }
         if (status === 'applied') {
             state.appliedIds.add(opp.id);
             state.savedIds.delete(opp.id);
             state.passedIds.delete(opp.id);
-            saveLocalSet('appliedIds');
-            saveLocalSet('savedIds');
-            saveLocalSet('passedIds');
         }
         if (status === 'ignored') {
             state.passedIds.add(opp.id);
             state.savedIds.delete(opp.id);
             state.appliedIds.delete(opp.id);
-            saveLocalSet('passedIds');
-            saveLocalSet('savedIds');
-            saveLocalSet('appliedIds');
         }
 
+        saveStatusSets();
         if (btn) btn.classList.add('is-active');
         updateMobileCounts();
 
+        var statusSync = Promise.resolve();
         if (isAuthenticated() && window.api.updateOpportunityStatus) {
-            window.api.updateOpportunityStatus(opp.id, status, { score: opp.score }).catch(console.error);
+            statusSync = window.api.updateOpportunityStatus(opp.id, status, { score: opp.score }).catch(function(err) {
+                console.error(err);
+            });
         }
+        showUndoToast(opp, status, prev, statusSync);
     }
 
     function createListingCard(opp, mode) {
@@ -757,7 +837,6 @@
         var title = document.createElement('h2');
         title.className = 'pp-card-title';
         title.textContent = opp.title || 'Untitled role';
-        titleArea.appendChild(title);
 
         var coRow = document.createElement('div');
         coRow.className = 'pp-co-row';
@@ -773,6 +852,7 @@
         coRow.appendChild(coName);
         coRow.appendChild(coTag);
         titleArea.appendChild(coRow);
+        titleArea.appendChild(title);
 
         var dataGrid = document.createElement('div');
         dataGrid.className = 'pp-data-grid';
@@ -794,6 +874,11 @@
 
         var bullets = getBullets(opp);
         if (bullets.length) {
+            var bulletsLabel = document.createElement('div');
+            bulletsLabel.className = 'pp-section-lbl';
+            bulletsLabel.textContent = 'AT A GLANCE';
+            body.appendChild(bulletsLabel);
+
             var ul = document.createElement('ul');
             ul.className = 'pp-bullets';
             bullets.forEach(function(text) {
@@ -802,7 +887,14 @@
                 ul.appendChild(li);
             });
             body.appendChild(ul);
-        } else if (mode === 'feed') {
+        }
+
+        if (mode === 'feed' && (opp.description_cleaned || opp.description)) {
+            var descriptionLabel = document.createElement('div');
+            descriptionLabel.className = 'pp-section-lbl';
+            descriptionLabel.textContent = 'FULL POSTING';
+            body.appendChild(descriptionLabel);
+
             var description = document.createElement('div');
             description.className = 'pp-description';
             renderDescription(opp, description);
@@ -1398,10 +1490,7 @@
     function bindDomReadyEvents() {
         var undoToastBtn = document.getElementById('undo-toast-btn');
         if (undoToastBtn) {
-            undoToastBtn.addEventListener('click', function() {
-                var toast = document.getElementById('undo-toast');
-                if (toast) toast.classList.add('is-hidden');
-            });
+            undoToastBtn.addEventListener('click', undoLastStatusChange);
         }
 
         var signOutBtn = document.getElementById('sign-out-btn');
@@ -1595,7 +1684,6 @@
         const hot = isHot(opp);
         const sal = formatSalary(opp.salary_min, opp.salary_max, opp.salary_raw);
         const loc = getLocation(opp);
-        const desc = normalizeDescription(opp.description_cleaned || opp.description || '');
 
         content.innerHTML = '';
 
@@ -1634,9 +1722,21 @@
         meta.textContent = [loc, sal, fmtDate(opp.posted_date || opp.first_seen)].filter(Boolean).join(' · ');
         body.appendChild(meta);
 
+        const bullets = getBullets(opp);
+        if (bullets.length) {
+            const ul = document.createElement('ul');
+            ul.className = 'pp-bullets';
+            bullets.forEach(function(item) {
+                const li = document.createElement('li');
+                li.textContent = item;
+                ul.appendChild(li);
+            });
+            body.appendChild(ul);
+        }
+
         const textEl = document.createElement('div');
         textEl.className = 'm-overlay-text';
-        textEl.textContent = desc;
+        renderDescription(opp, textEl);
         body.appendChild(textEl);
 
         const applyUrl = safeExternalUrl(opp.url);
