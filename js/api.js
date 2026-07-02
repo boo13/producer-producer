@@ -5,6 +5,8 @@
 
 // NOTE: `api.producer-producer.com` is DNS-only (grey-clouded) in Cloudflare so
 // browser fetch() is never bot-challenged; it must stay un-proxied.
+// It is listed first because `*.fly.dev` appears on tracker blocklists and
+// gets silently blocked by some mobile content blockers.
 const DEFAULT_LOCAL_API_BASE_URLS = [
     'http://localhost:8080',
     'http://127.0.0.1:8080',
@@ -12,8 +14,9 @@ const DEFAULT_LOCAL_API_BASE_URLS = [
     'http://127.0.0.1:8000',
 ];
 const DEFAULT_PRODUCTION_API_BASE_URLS = [
-    'https://producer-producer-api.fly.dev',
     'https://api.producer-producer.com',
+    'https://producer-producer-api.fly.dev',
+    'https://api2.producer-producer.com',
 ];
 const REQUEST_TIMEOUT_MS = 12000;
 const HEALTHCHECK_TIMEOUT_MS = 2500;
